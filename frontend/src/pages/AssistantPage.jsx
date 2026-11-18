@@ -12,9 +12,12 @@ import {
   Building2, 
   FileText,
   HelpCircle,
-  RefreshCw
+  RefreshCw,
+  Edit3,
+  Save,
+  Check
 } from 'lucide-react';
-import { fetchAssistantExplanation } from '../api/apiClient';
+import { fetchAssistantExplanation, submitFindingReview } from '../api/apiClient';
 
 const LANGUAGES = [
   { code: 'en', label: 'English', native: 'English' },
@@ -28,6 +31,21 @@ export default function AssistantPage({ auditResult, onGoToReport }) {
   const [isLoading, setIsLoading] = useState(false);
   const [checkedItems, setCheckedItems] = useState({});
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [reviewingId, setReviewingId] = useState(null);
+  const [operatorNotes, setOperatorNotes] = useState('');
+  const [reviewStatus, setReviewStatus] = useState({});
+
+  const handleSaveReview = async (findingId) => {
+    if (!operatorNotes.trim()) return;
+    try {
+      await submitFindingReview(auditResult.audit_id, findingId, true, operatorNotes);
+      setReviewStatus(prev => ({ ...prev, [findingId]: operatorNotes }));
+      setReviewingId(null);
+      setOperatorNotes('');
+    } catch (err) {
+      alert(`Could not save review note: ${err.message}`);
+    }
+  };
 
   useEffect(() => {
     async function loadGuidance() {
@@ -215,6 +233,60 @@ export default function AssistantPage({ auditResult, onGoToReport }) {
                       <div className="text-[11px] font-semibold text-slate-900 bg-white/80 p-2 rounded border border-slate-200">
                         <span className="text-teal-700 font-bold">Action: </span>
                         {fe.action_step}
+                      </div>
+
+                      {/* CSC Operator Annotations */}
+                      <div className="mt-3 pt-3 border-t border-slate-200/60 flex flex-col gap-2">
+                        {reviewStatus[fe.finding_id] ? (
+                          <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-center justify-between">
+                            <div>
+                              <span className="font-bold">CSC Verification Note: </span>
+                              <span>{reviewStatus[fe.finding_id]}</span>
+                            </div>
+                            <span className="text-[10px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                              Verified
+                            </span>
+                          </div>
+                        ) : reviewingId === fe.finding_id ? (
+                          <div className="space-y-2 bg-white p-3 rounded-lg border border-slate-200">
+                            <textarea
+                              rows={2}
+                              value={operatorNotes}
+                              onChange={(e) => setOperatorNotes(e.target.value)}
+                              placeholder="Enter operator note (e.g. Verified with manual certificate, spelling allowed under local rules)..."
+                              className="w-full text-xs p-2 border border-slate-300 rounded focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => setReviewingId(null)}
+                                className="px-2.5 py-1 text-[11px] text-slate-500 hover:text-slate-700 font-medium"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleSaveReview(fe.finding_id)}
+                                className="inline-flex items-center gap-1 px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-bold rounded-lg shadow-sm"
+                              >
+                                <Save className="w-3 h-3" />
+                                <span>Save & Mark Reviewed</span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-slate-500 font-mono">ID: {fe.finding_id}</span>
+                            <button
+                              onClick={() => {
+                                setReviewingId(fe.finding_id);
+                                setOperatorNotes('');
+                              }}
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-lg border border-teal-200 transition"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                              <span>Add Operator Verification Note</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

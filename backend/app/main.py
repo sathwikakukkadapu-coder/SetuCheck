@@ -7,6 +7,8 @@ from app.api.audit import router as audit_router
 from app.api.assistant import router as assistant_router
 from app.api.reports import router as reports_router
 from app.api.demo import router as demo_router
+from app.api.schemes import router as schemes_router
+from app.api.admin import router as admin_router
 
 app = FastAPI(
     title="SetuCheck API",
@@ -30,6 +32,8 @@ app.include_router(audit_router, prefix="/api")
 app.include_router(assistant_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
 app.include_router(demo_router, prefix="/api")
+app.include_router(schemes_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 
 @app.get("/api/health")
 def health_check():

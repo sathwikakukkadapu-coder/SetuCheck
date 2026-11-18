@@ -5,14 +5,14 @@ from app.models.schemas import (
     AuditResult,
     AssistantResponse,
     FindingExplanation,
-    Severity
+    Severity,
+    StatusColor
 )
 from app.config import GEMINI_API_KEY, ENABLE_GEMINI
 from app.utils.masking import sanitize_for_ai
 
 logger = logging.getLogger(__name__)
 
-# Multilingual Local Explanations Repository
 MULTILINGUAL_TEMPLATES = {
     "en": {
         "lang_name": "English",
@@ -140,10 +140,7 @@ def generate_local_explanations(
     audit_result: AuditResult,
     lang: str = "en"
 ) -> AssistantResponse:
-    """
-    Generates deterministic, high-quality multilingual explanations and recommendations
-    without relying on external network/API calls.
-    """
+    """Generates deterministic multilingual explanations and recommendations."""
     t = MULTILINGUAL_TEMPLATES.get(lang, MULTILINGUAL_TEMPLATES["en"])
 
     if audit_result.high_priority_count > 0:
@@ -173,7 +170,6 @@ def generate_local_explanations(
 
         rule_info = t["default_rules"].get(rule_key, t["default_rules"]["NAME"])
 
-        # Add specific context if available
         custom_exp = f"{rule_info['explanation']} ({finding.field_name}: '{finding.doc_a_value or ''}')"
         if finding.doc_b_value and finding.doc_b_name:
             custom_exp += f" vs '{finding.doc_b_value}' in {finding.doc_b_name}."
@@ -182,6 +178,7 @@ def generate_local_explanations(
             finding_id=finding.id,
             field_name=finding.field_name,
             severity=finding.severity,
+            status_color=finding.status_color or StatusColor.YELLOW,
             title=rule_info["title"],
             simple_explanation=custom_exp,
             action_step=rule_info["action"]
@@ -212,21 +209,14 @@ def generate_assistant_explanation(
     audit_result: AuditResult,
     lang: str = "en"
 ) -> AssistantResponse:
-    """
-    Orchestrates multilingual explanations:
-    - Uses local fallback by default or if Gemini is disabled.
-    - If Gemini API key is configured, uses Gemini with masked inputs to enrich explanations.
-    """
-    # 1. Generate guaranteed deterministic baseline
+    """Orchestrates multilingual explanations with Gemini enrichment if enabled."""
     base_response = generate_local_explanations(audit_result, lang)
 
     if not ENABLE_GEMINI:
         return base_response
 
-    # Optional: Call Gemini if key is provided
     try:
         import requests
-        # Prepare strictly sanitized/masked findings
         sanitized_findings = [
             {
                 "field": f.field_name,

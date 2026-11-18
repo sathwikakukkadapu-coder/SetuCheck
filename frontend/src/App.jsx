@@ -6,6 +6,7 @@ import WorkspacePage from './pages/WorkspacePage';
 import DashboardPage from './pages/DashboardPage';
 import AssistantPage from './pages/AssistantPage';
 import ReportPage from './pages/ReportPage';
+import AdminPage from './pages/AdminPage';
 import { fetchDemoCase, runAudit } from './api/apiClient';
 
 export default function App() {
@@ -78,6 +79,10 @@ export default function App() {
             auditResult={auditResult} 
             onBackToDashboard={() => setActivePage('dashboard')} 
           />
+        )}
+
+        {activePage === 'admin' && (
+          <AdminPage />
         )}
       </main>
 

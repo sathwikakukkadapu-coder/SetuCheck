@@ -3,7 +3,7 @@ from app.main import health_check
 from app.api.demo import list_demo_cases, get_demo_case, DEMO_CASES
 from app.api.audit import execute_audit, get_audit_result
 from app.api.assistant import explain_findings
-from app.api.reports import download_audit_report
+from app.api.reports import generate_or_get_report_file, verify_audit_report
 from app.models.schemas import AuditRequest, AssistantRequest
 
 def test_health_endpoint():
@@ -71,6 +71,6 @@ def test_report_generation_endpoint():
     audit_req = AuditRequest(scheme="pension", pre_extracted=case_1.documents)
     audit_res = execute_audit(audit_req)
 
-    file_resp = download_audit_report(audit_res.audit_id)
+    file_resp = generate_or_get_report_file(audit_res.audit_id)
     assert file_resp.media_type == "application/pdf"
     assert audit_res.audit_id in file_resp.filename

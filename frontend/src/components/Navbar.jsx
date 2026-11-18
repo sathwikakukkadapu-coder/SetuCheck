@@ -8,6 +8,7 @@ export default function Navbar({ activePage, setActivePage, auditResult }) {
     { id: 'dashboard', label: 'Audit Dashboard', disabled: !auditResult },
     { id: 'assistant', label: 'Multilingual Assistant', disabled: !auditResult },
     { id: 'report', label: 'Official Dossier', disabled: !auditResult },
+    { id: 'admin', label: 'Admin & Rules' },
   ];
 
   return (

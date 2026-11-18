@@ -14,7 +14,11 @@ def extract_text_from_pdf(pdf_path: Path) -> Tuple[str, str, float]:
     if not pdf_path.exists():
         raise FileNotFoundError(f"PDF file not found: {pdf_path}")
 
-    doc = fitz.open(str(pdf_path))
+    try:
+        doc = fitz.open(str(pdf_path))
+    except Exception as err:
+        return f"[CORRUPT_OR_UNREADABLE_PDF: {str(err)}]", "unreadable_fallback", 0.0
+
     full_text = []
     has_scanned_page = False
 

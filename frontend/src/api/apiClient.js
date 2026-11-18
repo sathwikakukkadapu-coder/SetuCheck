@@ -109,3 +109,55 @@ export async function fetchAssistantExplanation({ audit_id, language, audit_resu
 export function getReportDownloadUrl(auditId) {
   return `${API_BASE}/api/reports/${auditId}`;
 }
+
+export async function fetchSchemes() {
+  const res = await fetch(`${API_BASE}/api/schemes`);
+  if (!res.ok) throw new Error("Failed to load schemes");
+  return await res.json();
+}
+
+export async function updateScheme(schemeId, payload) {
+  const res = await fetch(`${API_BASE}/api/schemes/${schemeId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || "Failed to update scheme");
+  }
+  return await res.json();
+}
+
+export async function submitFindingReview(auditId, findingId, isReviewed, reviewerNotes) {
+  const res = await fetch(`${API_BASE}/api/audit/${auditId}/review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      finding_id: findingId,
+      is_reviewed: isReviewed,
+      reviewer_notes: reviewerNotes,
+    }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || "Failed to submit finding review");
+  }
+  return await res.json();
+}
+
+export async function verifyReportDossier(auditId) {
+  const res = await fetch(`${API_BASE}/api/reports/verify/${auditId}`);
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || "Failed to verify report");
+  }
+  return await res.json();
+}
+
+export async function fetchAdminAnalytics() {
+  const res = await fetch(`${API_BASE}/api/admin/analytics`);
+  if (!res.ok) throw new Error("Failed to load admin analytics");
+  return await res.json();
+}
+

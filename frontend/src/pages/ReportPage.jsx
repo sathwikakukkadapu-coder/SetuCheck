@@ -112,6 +112,12 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
             <div className="font-mono text-slate-400 text-[10px]">AUDIT REFERENCE:</div>
             <div className="font-mono font-bold text-slate-900 text-sm">{audit_id}</div>
             <div className="text-slate-500 text-[11px] mt-0.5">{new Date(timestamp).toLocaleDateString()}</div>
+            {auditResult.sha256_hash && (
+              <div className="mt-2 text-[10px] font-mono text-slate-500 bg-slate-100 p-1.5 rounded border border-slate-200 text-left">
+                <span className="font-bold text-slate-700 block">SHA-256 HASH:</span>
+                <span className="break-all">{auditResult.sha256_hash}</span>
+              </div>
+            )}
           </div>
         </div>
 

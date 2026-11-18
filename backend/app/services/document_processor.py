@@ -20,12 +20,13 @@ def process_uploaded_document(
     - Measures processing duration
     """
     start_time = time.time()
-    ext = file_path.suffix.lower()
+    path_obj = Path(file_path)
+    ext = path_obj.suffix.lower()
 
     if ext == ".pdf":
-        raw_text, method, conf = extract_text_from_pdf(file_path)
+        raw_text, method, conf = extract_text_from_pdf(path_obj)
     elif ext in [".jpg", ".jpeg", ".png"]:
-        raw_text, conf, success = run_image_ocr(file_path)
+        raw_text, conf, success = run_image_ocr(path_obj)
         method = "ocr"
     else:
         raise ValueError(f"Unsupported document file extension: {ext}")
