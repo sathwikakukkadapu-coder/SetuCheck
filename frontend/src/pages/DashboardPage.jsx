@@ -11,24 +11,37 @@ import {
   Filter,
   BarChart3,
   Layers,
-  Key,
-  ExternalLink,
   Sparkles,
   CheckSquare,
   Wand2,
-  RotateCcw
+  RotateCcw,
+  Building2,
+  Calendar,
+  Hash,
+  Share2,
+  FileSearch,
+  Eye,
+  Info,
+  ExternalLink,
+  ChevronRight
 } from 'lucide-react';
 import ScoreGauge from '../components/ScoreGauge';
 import DiscrepancyCard from '../components/DiscrepancyCard';
 import DocumentComparisonView from '../components/DocumentComparisonView';
 import EvidenceModal from '../components/EvidenceModal';
-import SetuMitraChat from '../components/SetuMitraChat';
-import { simulateAuditFixes } from '../api/apiClient';
+import { AadhaarMockup, BankPassbookMockup, UtilityBillMockup } from '../components/DocumentVisualizer';
+import { simulateAuditFixes, getReportDownloadUrl } from '../api/apiClient';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-export default function DashboardPage({ auditResult, onGoToAssistant, onGoToReport }) {
+export default function DashboardPage({ 
+  auditResult, 
+  onGoToAssistant, 
+  onGoToReport,
+  onGoToWorkspace
+}) {
   const [filterSeverity, setFilterSeverity] = useState('ALL');
   const [selectedFinding, setSelectedFinding] = useState(null);
+  const [activeTab, setActiveTab] = useState('findings'); // 'findings' | 'comparison' | 'mockups'
   
   // What-If Simulation State
   const [simulatedResult, setSimulatedResult] = useState(null);
@@ -38,9 +51,21 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
 
   if (!auditResult) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16 text-center">
-        <h2 className="text-xl font-bold text-slate-900 mb-2">No Active Audit Dossier</h2>
-        <p className="text-xs text-slate-500">Please upload documents in the Applicant Workspace to run an audit.</p>
+      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+        <div className="w-16 h-16 rounded-3xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4">
+          <FileText className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-[#10243A] mb-2">No Active Audit Dossier</h2>
+        <p className="text-xs text-[#64748B] max-w-sm mx-auto mb-6">
+          Upload supporting documents in the Applicant Workspace to generate a live deterministic audit.
+        </p>
+        <button
+          onClick={onGoToWorkspace}
+          className="inline-flex items-center space-x-2 bg-[#0D9488] hover:bg-[#14B8A6] text-white text-xs font-bold px-6 py-3 rounded-xl shadow-md transition"
+        >
+          <span>Open Applicant Workspace</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
     );
   }
@@ -58,8 +83,8 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
     review_required_count,
     informational_count,
     passed_count,
-    findings,
-    extracted_documents,
+    findings = [],
+    extracted_documents = [],
     scheme_name,
     audit_id,
     timestamp,
@@ -75,7 +100,6 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
       const newFixes = { ...simulatedFixes, [finding.id]: correctedValue };
       setSimulatedFixes(newFixes);
 
-      // Determine target document & field
       let fieldKey = "name";
       if (finding.field_name?.toLowerCase().includes("ifsc")) fieldKey = "ifsc_code";
       else if (finding.field_name?.toLowerCase().includes("account")) fieldKey = "bank_account_no";
@@ -98,8 +122,13 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
         overrides: overrides
       });
 
-      setSimulatedResult(simResp.updated_result);
-      setSimulationStats(simResp);
+      setSimulatedResult(simResp.updated_audit);
+      setSimulationStats({
+        scoreDelta: simResp.score_delta,
+        prevScore: simResp.previous_score,
+        newScore: simResp.new_score,
+        resolvedCount: simResp.resolved_count,
+      });
     } catch (err) {
       console.error("Simulation failed:", err);
     } finally {
@@ -116,30 +145,351 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
   // Filter findings
   const filteredFindings = findings.filter(f => {
     if (filterSeverity === 'ALL') return true;
-    if (filterSeverity === 'GREEN') return f.status_color === 'GREEN' || f.severity === 'PASSED';
-    if (filterSeverity === 'YELLOW') return f.status_color === 'YELLOW' || f.severity === 'REVIEW_REQUIRED';
-    if (filterSeverity === 'RED') return f.status_color === 'RED' || f.severity === 'HIGH';
-    if (filterSeverity === 'GRAY') return f.status_color === 'GRAY' || f.severity === 'INFORMATIONAL';
-    return f.severity === filterSeverity;
+    if (filterSeverity === 'HIGH') return f.severity === 'HIGH' || f.status_color === 'RED';
+    if (filterSeverity === 'REVIEW') return f.severity === 'REVIEW_REQUIRED' || f.status_color === 'YELLOW';
+    if (filterSeverity === 'INFO') return f.severity === 'INFORMATIONAL' || f.status_color === 'GRAY';
+    if (filterSeverity === 'PASSED') return f.severity === 'PASSED' || f.status_color === 'GREEN';
+    return true;
   });
-
-  // Recharts Data
-  const chartData = [
-    { name: 'High Priority', count: high_priority_count, color: '#EF4444' },
-    { name: 'Review Req.', count: review_required_count, color: '#F59E0B' },
-    { name: 'Informational', count: informational_count, color: '#0EA5E9' },
-    { name: 'Passed Checks', count: passed_count, color: '#10B981' },
-  ];
-
-  // Category scores defaults if not present
-  const catCompleteness = category_scores?.completeness ?? 30;
-  const catConsistency = category_scores?.consistency ?? 30;
-  const catValidation = category_scores?.field_validation ?? 20;
-  const catQuality = category_scores?.document_quality ?? 20;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-      {/* Evidence Modal if opened */}
+      
+      {/* 1. TOP HEADER & DOSSIER REFERENCE */}
+      <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-sm mb-8 civic-card-shadow">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-2 text-xs font-bold text-[#0D9488] uppercase tracking-wider mb-1">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Official Pre-Submission Audit Dossier</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-[#10243A] tracking-tight">
+              Application Readiness Dashboard
+            </h1>
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-[#64748B]">
+              <span className="flex items-center gap-1 font-mono">
+                <Hash className="w-3.5 h-3.5 text-slate-400" />
+                Ref: <strong className="text-[#10243A]">{audit_id}</strong>
+              </span>
+              <span>&bull;</span>
+              <span className="flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                Scheme: <strong className="text-[#10243A]">{scheme_name}</strong>
+              </span>
+              <span>&bull;</span>
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                Audited: {new Date(timestamp).toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <button
+              onClick={onGoToAssistant}
+              className="inline-flex items-center space-x-1.5 text-xs font-bold bg-[#0D9488]/10 hover:bg-[#0D9488]/20 text-[#0D9488] px-3.5 py-2.5 rounded-xl border border-[#0D9488]/30 transition"
+            >
+              <Languages className="w-4 h-4" />
+              <span>Vernacular Voice Guidance</span>
+            </button>
+
+            <a
+              href={getReportDownloadUrl(audit_id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              download={`SetuCheck_${audit_id}.pdf`}
+              className="inline-flex items-center space-x-1.5 text-xs font-bold bg-[#10243A] hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl shadow-md transition"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download PDF Dossier</span>
+            </a>
+          </div>
+        </div>
+
+        {/* Simulation Alert Pill */}
+        {simulatedResult && (
+          <div className="mt-4 p-3 bg-teal-50 border border-teal-200 rounded-2xl flex items-center justify-between text-xs text-teal-900 animate-in fade-in">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-[#0D9488] shrink-0" />
+              <span>
+                <strong>What-If Simulation Active:</strong> Score boosted from <strong>{simulationStats?.prevScore}</strong> to <strong className="text-emerald-700">{simulationStats?.newScore}</strong> (+{simulationStats?.scoreDelta} pts).
+              </span>
+            </div>
+            <button
+              onClick={handleResetSimulation}
+              className="inline-flex items-center space-x-1 text-teal-700 hover:text-teal-900 font-bold bg-white px-2.5 py-1 rounded-lg border border-teal-200 transition"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 2. STATS & SCORE GAUGES GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+        
+        {/* Readiness Gauge (4 cols) */}
+        <div className="lg:col-span-4">
+          <ScoreGauge score={readiness_score} />
+        </div>
+
+        {/* Breakdown & Metric Cards (8 cols) */}
+        <div className="lg:col-span-8 flex flex-col justify-between space-y-6">
+          
+          {/* Top 4 Metric Pills */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-sm civic-card-shadow">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-1">
+                <span>DOCUMENTS</span>
+                <FileText className="w-4 h-4 text-slate-400" />
+              </div>
+              <div className="text-2xl font-black text-[#10243A]">{total_documents}</div>
+              <div className="text-[10px] text-slate-500 mt-1">Staged & Concorded</div>
+            </div>
+
+            <div className="bg-white p-4 rounded-3xl border border-rose-200/80 bg-rose-50/20 shadow-sm civic-card-shadow">
+              <div className="flex items-center justify-between text-[11px] font-bold text-[#DC2626] mb-1">
+                <span>CRITICAL</span>
+                <AlertCircle className="w-4 h-4 text-[#DC2626]" />
+              </div>
+              <div className="text-2xl font-black text-[#DC2626]">{high_priority_count}</div>
+              <div className="text-[10px] text-rose-700 mt-1">Fatal Rejection Risk</div>
+            </div>
+
+            <div className="bg-white p-4 rounded-3xl border border-amber-200/80 bg-amber-50/20 shadow-sm civic-card-shadow">
+              <div className="flex items-center justify-between text-[11px] font-bold text-amber-600 mb-1">
+                <span>REVIEW</span>
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="text-2xl font-black text-amber-700">{review_required_count}</div>
+              <div className="text-[10px] text-amber-800 mt-1">Manual Check Needed</div>
+            </div>
+
+            <div className="bg-white p-4 rounded-3xl border border-emerald-200/80 bg-emerald-50/20 shadow-sm civic-card-shadow">
+              <div className="flex items-center justify-between text-[11px] font-bold text-[#16A34A] mb-1">
+                <span>VALIDATED</span>
+                <CheckCircle2 className="w-4 h-4 text-[#16A34A]" />
+              </div>
+              <div className="text-2xl font-black text-[#16A34A]">{passed_count}</div>
+              <div className="text-[10px] text-emerald-700 mt-1">Concordant Fields</div>
+            </div>
+          </div>
+
+          {/* 4-Category Rubric Score Breakdown Card */}
+          {category_scores && (
+            <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm civic-card-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-black uppercase tracking-wider text-[#10243A]">
+                  4-Category Explainable Score Rubric Breakdown
+                </span>
+                <span className="text-[11px] text-slate-400 font-mono">Total Max: 100 pts</span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="p-3 bg-[#F5F8FC] rounded-2xl border border-slate-200">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">Completeness</div>
+                  <div className="text-lg font-black text-[#10243A]">
+                    {category_scores.completeness_score} <span className="text-xs text-slate-400">/ 30</span>
+                  </div>
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div 
+                      className="bg-[#0D9488] h-full rounded-full" 
+                      style={{ width: `${(category_scores.completeness_score / 30) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#F5F8FC] rounded-2xl border border-slate-200">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">Consistency</div>
+                  <div className="text-lg font-black text-[#10243A]">
+                    {category_scores.consistency_score} <span className="text-xs text-slate-400">/ 30</span>
+                  </div>
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div 
+                      className="bg-[#2563EB] h-full rounded-full" 
+                      style={{ width: `${(category_scores.consistency_score / 30) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#F5F8FC] rounded-2xl border border-slate-200">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">Validation</div>
+                  <div className="text-lg font-black text-[#10243A]">
+                    {category_scores.validation_score} <span className="text-xs text-slate-400">/ 20</span>
+                  </div>
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div 
+                      className="bg-amber-500 h-full rounded-full" 
+                      style={{ width: `${(category_scores.validation_score / 20) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#F5F8FC] rounded-2xl border border-slate-200">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">Quality (OCR)</div>
+                  <div className="text-lg font-black text-[#10243A]">
+                    {category_scores.quality_score} <span className="text-xs text-slate-400">/ 20</span>
+                  </div>
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div 
+                      className="bg-[#16A34A] h-full rounded-full" 
+                      style={{ width: `${(category_scores.quality_score / 20) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {/* 3. VIEW MODE TABS: Discrepancy Findings vs Concordance Matrix vs Document Visualizer */}
+      <div className="flex items-center space-x-2 border-b border-slate-200 mb-6 pb-2">
+        <button
+          onClick={() => setActiveTab('findings')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
+            activeTab === 'findings'
+              ? 'bg-[#10243A] text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <AlertCircle className="w-3.5 h-3.5" />
+          <span>Discrepancy Findings ({findings.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('comparison')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
+            activeTab === 'comparison'
+              ? 'bg-[#10243A] text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Concordance Matrix</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('mockups')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
+            activeTab === 'mockups'
+              ? 'bg-[#10243A] text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>Indian Document Mockups</span>
+        </button>
+      </div>
+
+      {/* TAB 1: DISCREPANCY FINDINGS WITH FILTERS */}
+      {activeTab === 'findings' && (
+        <div className="space-y-6">
+          
+          {/* Severity Filter Pills */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs">
+            <div className="flex items-center space-x-2 text-xs font-bold text-[#10243A]">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              <span>Filter Findings:</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[
+                { id: 'ALL', label: 'All Findings' },
+                { id: 'HIGH', label: 'Critical Issues' },
+                { id: 'REVIEW', label: 'Requires Review' },
+                { id: 'INFO', label: 'Informational' },
+                { id: 'PASSED', label: 'Validated (Passed)' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilterSeverity(tab.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                    filterSeverity === tab.id
+                      ? 'bg-[#0D9488] text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Finding Cards List */}
+          <div className="space-y-4">
+            {filteredFindings.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center civic-card-shadow">
+                <CheckCircle2 className="w-12 h-12 text-[#16A34A] mx-auto mb-3" />
+                <h3 className="font-bold text-[#10243A] text-base mb-1">No Discrepancies in this Filter</h3>
+                <p className="text-xs text-[#64748B]">All audited fields satisfy compliance checks or no findings matched the filter.</p>
+              </div>
+            ) : (
+              filteredFindings.map((finding) => (
+                <DiscrepancyCard
+                  key={finding.id}
+                  finding={finding}
+                  onInspect={setSelectedFinding}
+                  onSimulateFix={handleSimulateFix}
+                  isSimulatedFixed={Boolean(simulatedFixes[finding.id])}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: CONCORDANCE MATRIX */}
+      {activeTab === 'comparison' && (
+        <DocumentComparisonView 
+          documents={extracted_documents} 
+          findings={findings} 
+        />
+      )}
+
+      {/* TAB 3: REALISTIC INDIAN DOCUMENT MOCKUPS */}
+      {activeTab === 'mockups' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm civic-card-shadow">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-3">1. Aadhaar Card</h3>
+            <AadhaarMockup 
+              data={{
+                name: extracted_documents.find(d => d.document_type === 'identity')?.name?.value || "RAMESH KUMAR",
+                uid: "8912",
+                dob: extracted_documents.find(d => d.document_type === 'identity')?.dob?.value || "12/04/1982",
+                address: extracted_documents.find(d => d.document_type === 'identity')?.address?.value || "H No 4-12, Gandhi Nagar, Hyderabad 500028"
+              }}
+            />
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm civic-card-shadow">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-3">2. State Bank Passbook</h3>
+            <BankPassbookMockup 
+              data={{
+                name: extracted_documents.find(d => d.document_type === 'bank_passbook')?.name?.value || "RAMESH K.",
+                account: "•••• 3049",
+                ifsc: extracted_documents.find(d => d.document_type === 'bank_passbook')?.ifsc_code?.value || "SBIN0001234",
+                branch: "SBI Hyderabad Main"
+              }}
+            />
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 border border-slate-200/90 shadow-sm civic-card-shadow">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-500 mb-3">3. Utility / Domicile Bill</h3>
+            <UtilityBillMockup 
+              data={{
+                consumerName: extracted_documents.find(d => d.document_type === 'address_proof')?.name?.value || "RAMESH KUMAR",
+                billNo: "APCPDCL-7849102",
+                address: extracted_documents.find(d => d.document_type === 'address_proof')?.address?.value || "H No 4-12, Gandhi Nagar, Hyderabad 500028"
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Raw Evidence Modal */}
       {selectedFinding && (
         <EvidenceModal
           finding={selectedFinding}
@@ -147,269 +497,6 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
         />
       )}
 
-      {/* Header & Meta */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-500 mb-1">
-            <span>Dossier ID: <strong>{audit_id}</strong></span>
-            <span>&bull;</span>
-            <span>{new Date(timestamp).toLocaleString()}</span>
-            {sha256_hash && (
-              <>
-                <span>&bull;</span>
-                <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-300">
-                  <Key className="w-3 h-3 text-teal-600" />
-                  SHA-256: {sha256_hash.slice(0, 12)}...
-                </span>
-              </>
-            )}
-          </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Audit Findings & Readiness Dashboard</h1>
-          <p className="text-xs text-slate-600 mt-1">
-            Target Welfare Scheme: <strong className="text-slate-900">{scheme_name}</strong>
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={onGoToAssistant}
-            className="inline-flex items-center space-x-1.5 text-xs font-bold bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 px-3.5 py-2.5 rounded-xl transition"
-          >
-            <Languages className="w-4 h-4 text-teal-600" />
-            <span>Telugu / Hindi Voice Assistant</span>
-          </button>
-
-          <button
-            onClick={onGoToReport}
-            className="inline-flex items-center space-x-1.5 text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 px-3.5 py-2.5 rounded-xl transition shadow"
-          >
-            <Download className="w-4 h-4 text-teal-400" />
-            <span>Official Signed PDF Dossier</span>
-          </button>
-        </div>
-      </div>
-
-      {/* What-If Simulation Active Banner */}
-      {simulatedResult && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-teal-500/10 via-cyan-500/10 to-emerald-500/10 border-2 border-teal-500 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-teal-500 text-slate-950 rounded-xl font-bold">
-              <Wand2 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-sm text-teal-950 uppercase tracking-wider">What-If Correction Simulation Active</span>
-                <span className="text-[10px] bg-teal-100 text-teal-800 border border-teal-300 font-bold px-2 py-0.5 rounded-full">
-                  +{simulationStats?.score_delta || 0} Points Projected
-                </span>
-              </div>
-              <p className="text-xs text-teal-800 mt-0.5">
-                Simulated Candidate Fixes: <strong>{Object.keys(simulatedFixes).length} item(s) rectified</strong>. 
-                Readiness score improved from <strong>{simulationStats?.original_score}</strong> to <strong>{simulationStats?.projected_score}/100</strong>!
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleResetSimulation}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold shadow-sm transition"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Simulation</span>
-          </button>
-        </div>
-      )}
-
-      {/* 4-Category Score Breakdown Rubric */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {/* Category 1: Completeness */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Document Completeness</span>
-            <span className="text-sm font-extrabold text-slate-900">{catCompleteness} / 30</span>
-          </div>
-          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-2">
-            <div 
-              className={`h-full transition-all duration-500 ${catCompleteness >= 25 ? 'bg-emerald-500' : catCompleteness >= 15 ? 'bg-amber-500' : 'bg-rose-500'}`}
-              style={{ width: `${(catCompleteness / 30) * 100}%` }}
-            />
-          </div>
-          <p className="text-[11px] text-slate-500">Required proofs & mandatory field presence</p>
-        </div>
-
-        {/* Category 2: Cross-Document Consistency */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Cross Consistency</span>
-            <span className="text-sm font-extrabold text-slate-900">{catConsistency} / 30</span>
-          </div>
-          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-2">
-            <div 
-              className={`h-full transition-all duration-500 ${catConsistency >= 25 ? 'bg-emerald-500' : catConsistency >= 15 ? 'bg-amber-500' : 'bg-rose-500'}`}
-              style={{ width: `${(catConsistency / 30) * 100}%` }}
-            />
-          </div>
-          <p className="text-[11px] text-slate-500">Name transliteration & address alignment</p>
-        </div>
-
-        {/* Category 3: Field Validation */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Field Validation</span>
-            <span className="text-sm font-extrabold text-slate-900">{catValidation} / 20</span>
-          </div>
-          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-2">
-            <div 
-              className={`h-full transition-all duration-500 ${catValidation >= 16 ? 'bg-emerald-500' : catValidation >= 10 ? 'bg-amber-500' : 'bg-rose-500'}`}
-              style={{ width: `${(catValidation / 20) * 100}%` }}
-            />
-          </div>
-          <p className="text-[11px] text-slate-500">RBI IFSC code & bank account checksums</p>
-        </div>
-
-        {/* Category 4: OCR Quality & Reliability */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Quality & OCR</span>
-            <span className="text-sm font-extrabold text-slate-900">{catQuality} / 20</span>
-          </div>
-          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-2">
-            <div 
-              className={`h-full transition-all duration-500 ${catQuality >= 16 ? 'bg-emerald-500' : catQuality >= 10 ? 'bg-amber-500' : 'bg-rose-500'}`}
-              style={{ width: `${(catQuality / 20) * 100}%` }}
-            />
-          </div>
-          <p className="text-[11px] text-slate-500">Deskewed resolution & recognition reliability</p>
-        </div>
-      </div>
-
-      {/* Top Metrics Row: Score Gauge + Statistics Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Readiness Score Gauge */}
-        <ScoreGauge score={readiness_score} />
-
-        {/* 4 Summary Cards */}
-        <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {/* Card 1: Documents */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Total Documents</span>
-            <div className="text-3xl font-extrabold text-slate-900 my-2">{total_documents}</div>
-            <span className="text-[11px] text-slate-500">Cross-verified</span>
-          </div>
-
-          {/* Card 2: High Priority */}
-          <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-200 shadow-sm flex flex-col justify-between">
-            <span className="text-[10px] font-bold uppercase text-rose-700 tracking-wider">High Priority</span>
-            <div className="text-3xl font-extrabold text-rose-600 my-2">{high_priority_count}</div>
-            <span className="text-[11px] text-rose-700">Must fix before submit</span>
-          </div>
-
-          {/* Card 3: Review Required */}
-          <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-200 shadow-sm flex flex-col justify-between">
-            <span className="text-[10px] font-bold uppercase text-amber-700 tracking-wider">Review Required</span>
-            <div className="text-3xl font-extrabold text-amber-600 my-2">{review_required_count}</div>
-            <span className="text-[11px] text-amber-700">Spelling / Formatting</span>
-          </div>
-
-          {/* Card 4: Passed Checks */}
-          <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-200 shadow-sm flex flex-col justify-between">
-            <span className="text-[10px] font-bold uppercase text-emerald-700 tracking-wider">Passed Checks</span>
-            <div className="text-3xl font-extrabold text-emerald-600 my-2">{passed_count}</div>
-            <span className="text-[11px] text-emerald-700">Full concordance</span>
-          </div>
-
-          {/* Bar Chart Overview */}
-          <div className="col-span-2 sm:col-span-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="w-full sm:w-1/2">
-              <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block mb-1">
-                Findings Distribution
-              </span>
-              <p className="text-[11px] text-slate-500 leading-normal">
-                {summary}
-              </p>
-            </div>
-
-            <div className="w-full sm:w-1/2 h-20">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 10, left: 20, bottom: 0 }}>
-                  <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748B' }} width={80} />
-                  <Tooltip />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Visual Cross-Document Comparison Matrix */}
-      <div className="mb-8">
-        <DocumentComparisonView 
-          documents={extracted_documents} 
-          findings={findings} 
-        />
-      </div>
-
-      {/* Findings List Section with Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">Detailed Discrepancy Cards</h2>
-            <p className="text-xs text-slate-500">Every check contains documented validation rules, clickable evidence inspector, and actionable rectification steps.</p>
-          </div>
-
-          {/* 4-Color Status Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              { id: 'ALL', label: `All (${findings.length})` },
-              { id: 'RED', label: `🔴 Red (${high_priority_count})` },
-              { id: 'YELLOW', label: `🟡 Yellow (${review_required_count})` },
-              { id: 'GREEN', label: `🟢 Green (${passed_count})` },
-              { id: 'GRAY', label: `⚪ Gray (${informational_count})` }
-            ].map(pill => (
-              <button
-                key={pill.id}
-                onClick={() => setFilterSeverity(pill.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                  filterSeverity === pill.id
-                    ? 'bg-slate-900 text-white shadow'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {pill.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Finding Cards */}
-        <div className="space-y-4">
-          {filteredFindings.map((f, i) => (
-            <DiscrepancyCard 
-              key={f.id || i} 
-              finding={f} 
-              isSimulatedFixed={Boolean(simulatedFixes[f.id])}
-              onInspect={(finding) => setSelectedFinding(finding)}
-              onSimulateFix={handleSimulateFix}
-            />
-          ))}
-
-          {filteredFindings.length === 0 && (
-            <div className="text-center py-8 text-xs text-slate-400">
-              No findings matching the selected filter.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Regulatory Notice Banner */}
-      <div className="p-4 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-600 leading-relaxed text-center mb-12">
-        <strong>Statutory Notice:</strong> {disclaimer}
-      </div>
     </div>
   );
 }

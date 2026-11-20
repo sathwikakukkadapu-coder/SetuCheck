@@ -1,11 +1,20 @@
 import React from 'react';
-import { FileText, Building2, MapPin, Check, X, AlertCircle } from 'lucide-react';
+import { 
+  FileText, 
+  Building2, 
+  MapPin, 
+  CheckCircle2, 
+  XCircle, 
+  AlertTriangle,
+  ShieldCheck,
+  Check
+} from 'lucide-react';
 
 export default function DocumentComparisonView({ documents, findings }) {
   if (!documents || documents.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-6 text-center text-slate-500 text-xs">
-        No documents available for comparison.
+      <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center text-slate-500 text-xs civic-card-shadow">
+        No documents available for cross-comparison.
       </div>
     );
   }
@@ -62,66 +71,69 @@ export default function DocumentComparisonView({ documents, findings }) {
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-      <div className="px-6 py-4 bg-slate-900 border-b border-slate-800 text-white flex items-center justify-between">
-        <div>
-          <h3 className="font-bold text-sm tracking-tight">Cross-Document Concordance Matrix</h3>
-          <p className="text-[11px] text-slate-400">Deterministic multi-document field alignment</p>
+    <div className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm civic-card-shadow">
+      <div className="px-6 py-4 bg-[#10243A] border-b border-slate-800 text-white flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <ShieldCheck className="w-5 h-5 text-[#2DD4BF]" />
+          <div>
+            <h3 className="font-bold text-sm tracking-tight">Cross-Document Concordance Matrix</h3>
+            <p className="text-[11px] text-slate-400">Multi-document deterministic field alignment</p>
+          </div>
         </div>
-        <span className="text-[11px] bg-slate-800 border border-slate-700 text-slate-300 px-2.5 py-1 rounded-full font-mono">
-          {documents.length} Dossier Documents
+        <span className="text-[11px] bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1 rounded-full font-mono">
+          {documents.length} Staged Documents
         </span>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="bg-slate-100/80 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
-              <th className="py-3 px-4 w-1/4">Field Attribute</th>
-              <th className="py-3 px-4 w-1/4">
+            <tr className="bg-[#F5F8FC] text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
+              <th className="py-3.5 px-5 w-1/4">Field Attribute</th>
+              <th className="py-3.5 px-5 w-1/4">
                 <div className="flex items-center space-x-1.5">
-                  <FileText className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Identity Proof (Aadhaar)</span>
+                  <FileText className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <span>1. Identity (Aadhaar)</span>
                 </div>
               </th>
-              <th className="py-3 px-4 w-1/4">
+              <th className="py-3.5 px-5 w-1/4">
                 <div className="flex items-center space-x-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Bank Passbook</span>
+                  <Building2 className="w-3.5 h-3.5 text-[#0D9488]" />
+                  <span>2. Bank Passbook</span>
                 </div>
               </th>
-              <th className="py-3 px-4 w-1/4">
+              <th className="py-3.5 px-5 w-1/4">
                 <div className="flex items-center space-x-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-cyan-600" />
-                  <span>Address Proof</span>
+                  <MapPin className="w-3.5 h-3.5 text-[#38BDF8]" />
+                  <span>3. Address Proof</span>
                 </div>
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {fields.map((f, i) => (
-              <tr 
-                key={i} 
-                className={`transition-colors ${f.hasIssue ? 'bg-amber-50/40 hover:bg-amber-50/70' : 'hover:bg-slate-50'}`}
-              >
-                <td className="py-3 px-4 font-semibold text-slate-900">
+              <tr key={i} className={`hover:bg-slate-50/80 transition ${f.hasIssue ? 'bg-amber-50/20' : ''}`}>
+                <td className="py-3.5 px-5 font-bold text-[#10243A]">
                   <div className="flex items-center space-x-2">
                     {f.hasIssue ? (
-                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     ) : (
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A] shrink-0" />
                     )}
                     <span>{f.label}</span>
                   </div>
                 </td>
-                <td className="py-3 px-4 font-mono text-slate-700 break-words">
-                  {f.idVal || <span className="text-slate-400 italic">(Missing)</span>}
+                
+                <td className="py-3.5 px-5 font-mono text-slate-700">
+                  {f.idVal || <span className="text-slate-400 italic">Not extracted</span>}
                 </td>
-                <td className="py-3 px-4 font-mono text-slate-700 break-words">
-                  {f.bankVal || <span className="text-slate-400 italic">(Missing)</span>}
+
+                <td className="py-3.5 px-5 font-mono text-slate-700">
+                  {f.bankVal || <span className="text-slate-400 italic">Not extracted</span>}
                 </td>
-                <td className="py-3 px-4 font-mono text-slate-700 break-words">
-                  {f.addrVal || <span className="text-slate-400 italic">(Missing)</span>}
+
+                <td className="py-3.5 px-5 font-mono text-slate-700">
+                  {f.addrVal || <span className="text-slate-400 italic">Not extracted</span>}
                 </td>
               </tr>
             ))}

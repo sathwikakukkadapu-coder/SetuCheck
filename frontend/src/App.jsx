@@ -9,7 +9,7 @@ import ReportPage from './pages/ReportPage';
 import AdminPage from './pages/AdminPage';
 import SetuMitraChat from './components/SetuMitraChat';
 import { fetchDemoCase, runAudit } from './api/apiClient';
-import { Sparkles, Play, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Sparkles, Play, CheckCircle2, AlertTriangle, AlertCircle, ArrowRight } from 'lucide-react';
 
 const DEMO_BUTTONS = [
   { id: 'case-1-perfect-match', label: 'Case 1: 100% Match', score: '100', color: 'emerald' },
@@ -25,8 +25,9 @@ export default function App() {
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeCaseId, setActiveCaseId] = useState('case-2-name-mismatch');
+  const [currentLang, setCurrentLang] = useState('en');
 
-  // Pre-load default audit case so ALL navbar tabs are interactive and populated immediately
+  // Pre-load default audit case so all tabs are populated immediately
   useEffect(() => {
     async function preloadInitialCase() {
       try {
@@ -68,21 +69,27 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
+    <div className="min-h-screen flex flex-col bg-[#F5F8FC] text-[#172B4D] selection:bg-[#0D9488] selection:text-white">
+      
+      {/* Premium Sticky Navigation */}
       <Navbar 
         activePage={activePage} 
         setActivePage={setActivePage} 
         auditResult={auditResult} 
         onOpenChat={() => setIsChatOpen(true)}
+        currentLang={currentLang}
+        onLanguageChange={setCurrentLang}
       />
 
-      {/* 1-Click Judges Test Scenario Switcher Bar (Visible on Audit, Assistant, Report pages) */}
+      {/* 1-Click Judges Evaluation Switcher Bar */}
       {['dashboard', 'assistant', 'report', 'workspace'].includes(activePage) && (
-        <div className="bg-slate-900 border-b border-slate-800 py-2.5 px-4 shadow-inner">
+        <div className="bg-[#10243A] border-b border-slate-800 py-2.5 px-4 shadow-inner">
           <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2 text-slate-300 font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-teal-400 animate-pulse" />
-              <span className="text-[11px] uppercase tracking-wider text-teal-400">Judges Demo Switcher:</span>
+              <Sparkles className="w-3.5 h-3.5 text-[#2DD4BF] animate-pulse" />
+              <span className="text-[11px] uppercase tracking-wider text-[#2DD4BF]">
+                Judges One-Click Evaluation Suite:
+              </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
@@ -91,14 +98,14 @@ export default function App() {
                   key={btn.id}
                   onClick={() => handleDirectDemoRun(btn.id)}
                   disabled={isLoadingDemo}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition flex items-center gap-1.5 ${
                     activeCaseId === btn.id
-                      ? 'bg-teal-500 text-slate-950 shadow-sm ring-1 ring-white'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                      ? 'bg-[#0D9488] text-white shadow-xs ring-1 ring-white/50'
+                      : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
                   }`}
                 >
                   <span>{btn.label}</span>
-                  <span className={`text-[10px] px-1 py-0.2 rounded font-mono ${
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
                     btn.color === 'emerald' ? 'bg-emerald-950 text-emerald-300' :
                     btn.color === 'amber' ? 'bg-amber-950 text-amber-300' :
                     btn.color === 'rose' ? 'bg-rose-950 text-rose-300' :
@@ -113,6 +120,7 @@ export default function App() {
         </div>
       )}
 
+      {/* Main Content Viewport */}
       <main className="flex-1">
         {activePage === 'landing' && (
           <LandingPage 
@@ -133,6 +141,7 @@ export default function App() {
             auditResult={auditResult} 
             onGoToAssistant={() => setActivePage('assistant')} 
             onGoToReport={() => setActivePage('report')} 
+            onGoToWorkspace={() => setActivePage('workspace')}
           />
         )}
 
@@ -162,6 +171,7 @@ export default function App() {
         onToggle={setIsChatOpen} 
       />
 
+      {/* Institutional GovTech Footer */}
       <Footer />
     </div>
   );
