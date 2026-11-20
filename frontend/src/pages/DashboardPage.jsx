@@ -14,17 +14,27 @@ import {
   Key,
   ExternalLink,
   Sparkles,
-  CheckSquare
+  CheckSquare,
+  Wand2,
+  RotateCcw
 } from 'lucide-react';
 import ScoreGauge from '../components/ScoreGauge';
 import DiscrepancyCard from '../components/DiscrepancyCard';
 import DocumentComparisonView from '../components/DocumentComparisonView';
 import EvidenceModal from '../components/EvidenceModal';
+import SetuMitraChat from '../components/SetuMitraChat';
+import { simulateAuditFixes } from '../api/apiClient';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function DashboardPage({ auditResult, onGoToAssistant, onGoToReport }) {
   const [filterSeverity, setFilterSeverity] = useState('ALL');
   const [selectedFinding, setSelectedFinding] = useState(null);
+  
+  // What-If Simulation State
+  const [simulatedResult, setSimulatedResult] = useState(null);
+  const [simulatedFixes, setSimulatedFixes] = useState({});
+  const [simulationStats, setSimulationStats] = useState(null);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   if (!auditResult) {
     return (
@@ -34,6 +44,9 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
       </div>
     );
   }
+
+  // Active or simulated result
+  const activeResult = simulatedResult || auditResult;
 
   const {
     readiness_score,
@@ -53,7 +66,52 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
     summary,
     sha256_hash,
     disclaimer
-  } = auditResult;
+  } = activeResult;
+
+  // Handle What-If candidate fix simulation
+  const handleSimulateFix = async (finding, correctedValue) => {
+    try {
+      setIsSimulating(true);
+      const newFixes = { ...simulatedFixes, [finding.id]: correctedValue };
+      setSimulatedFixes(newFixes);
+
+      // Determine target document & field
+      let fieldKey = "name";
+      if (finding.field_name?.toLowerCase().includes("ifsc")) fieldKey = "ifsc_code";
+      else if (finding.field_name?.toLowerCase().includes("account")) fieldKey = "bank_account_no";
+      else if (finding.field_name?.toLowerCase().includes("address")) fieldKey = "address";
+
+      let docType = "bank_passbook";
+      if (finding.doc_b_name?.toLowerCase().includes("identity") || finding.doc_a_name?.toLowerCase().includes("identity")) {
+        docType = "bank_passbook";
+      }
+
+      const overrides = Object.entries(newFixes).map(([fId, val]) => ({
+        field_name: fieldKey,
+        corrected_value: val,
+        doc_type: docType
+      }));
+
+      const simResp = await simulateAuditFixes({
+        scheme: auditResult.scheme_code || 'pension',
+        documents: auditResult.extracted_documents,
+        overrides: overrides
+      });
+
+      setSimulatedResult(simResp.updated_result);
+      setSimulationStats(simResp);
+    } catch (err) {
+      console.error("Simulation failed:", err);
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
+  const handleResetSimulation = () => {
+    setSimulatedResult(null);
+    setSimulatedFixes({});
+    setSimulationStats(null);
+  };
 
   // Filter findings
   const filteredFindings = findings.filter(f => {
@@ -130,6 +188,36 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
           </button>
         </div>
       </div>
+
+      {/* What-If Simulation Active Banner */}
+      {simulatedResult && (
+        <div className="mb-6 p-4 bg-gradient-to-r from-teal-500/10 via-cyan-500/10 to-emerald-500/10 border-2 border-teal-500 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-teal-500 text-slate-950 rounded-xl font-bold">
+              <Wand2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-sm text-teal-950 uppercase tracking-wider">What-If Correction Simulation Active</span>
+                <span className="text-[10px] bg-teal-100 text-teal-800 border border-teal-300 font-bold px-2 py-0.5 rounded-full">
+                  +{simulationStats?.score_delta || 0} Points Projected
+                </span>
+              </div>
+              <p className="text-xs text-teal-800 mt-0.5">
+                Simulated Candidate Fixes: <strong>{Object.keys(simulatedFixes).length} item(s) rectified</strong>. 
+                Readiness score improved from <strong>{simulationStats?.original_score}</strong> to <strong>{simulationStats?.projected_score}/100</strong>!
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleResetSimulation}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold shadow-sm transition"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset Simulation</span>
+          </button>
+        </div>
+      )}
 
       {/* 4-Category Score Breakdown Rubric */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -304,7 +392,9 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
             <DiscrepancyCard 
               key={f.id || i} 
               finding={f} 
+              isSimulatedFixed={Boolean(simulatedFixes[f.id])}
               onInspect={(finding) => setSelectedFinding(finding)}
+              onSimulateFix={handleSimulateFix}
             />
           ))}
 
@@ -317,9 +407,12 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
       </div>
 
       {/* Regulatory Notice Banner */}
-      <div className="p-4 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-600 leading-relaxed text-center">
+      <div className="p-4 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-600 leading-relaxed text-center mb-12">
         <strong>Statutory Notice:</strong> {disclaimer}
       </div>
+
+      {/* SetuMitra Interactive AI Co-Pilot Floating Widget */}
+      <SetuMitraChat auditResult={activeResult} />
     </div>
   );
 }

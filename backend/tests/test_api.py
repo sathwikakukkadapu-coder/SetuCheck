@@ -74,3 +74,38 @@ def test_report_generation_endpoint():
     file_resp = generate_or_get_report_file(audit_res.audit_id)
     assert file_resp.media_type == "application/pdf"
     assert audit_res.audit_id in file_resp.filename
+
+def test_setumitra_chat():
+    from app.api.assistant import chat_with_setumitra
+    from app.models.schemas import ChatRequest
+    case_1 = DEMO_CASES[0]
+    audit_req = AuditRequest(scheme="pension", pre_extracted=case_1.documents)
+    audit_res = execute_audit(audit_req)
+
+    req = ChatRequest(
+        message="Why is my IFSC code important?",
+        language="en",
+        audit_id=audit_res.audit_id
+    )
+    chat_res = chat_with_setumitra(req)
+    assert chat_res.reply != ""
+    assert "RBI" in chat_res.reply or "IFSC" in chat_res.reply
+
+def test_what_if_simulator():
+    from app.api.assistant import simulate_fixes
+    from app.models.schemas import SimulateFixRequest, SimulatedFieldOverride
+    case_3 = DEMO_CASES[2]  # Invalid IFSC
+    audit_req = AuditRequest(scheme="pension", pre_extracted=case_3.documents)
+    audit_res = execute_audit(audit_req)
+    
+    # Fix the IFSC code to valid SBIN0001234
+    req = SimulateFixRequest(
+        scheme="pension",
+        documents=case_3.documents,
+        overrides=[
+            SimulatedFieldOverride(doc_type="bank_passbook", field_name="ifsc_code", corrected_value="SBIN0001234")
+        ]
+    )
+    sim_res = simulate_fixes(req)
+    assert sim_res.projected_score >= sim_res.original_score
+    assert sim_res.projected_score >= 80

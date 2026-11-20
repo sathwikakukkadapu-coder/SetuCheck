@@ -205,3 +205,39 @@ class AuditVerificationResponse(BaseModel):
     total_documents: int
     issues_detected: int
     verification_message: str
+
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant" | "system"
+    content: str
+
+class ChatRequest(BaseModel):
+    message: str
+    language: str = "en"  # en | te | hi
+    audit_id: Optional[str] = None
+    audit_result: Optional[AuditResult] = None
+    history: List[ChatMessage] = Field(default_factory=list)
+
+class ChatResponse(BaseModel):
+    reply: str
+    language: str
+    suggested_questions: List[str] = Field(default_factory=list)
+    referenced_rules: List[str] = Field(default_factory=list)
+    source: str = "setumitra_engine"
+
+class SimulatedFieldOverride(BaseModel):
+    doc_id: Optional[str] = None
+    doc_type: Optional[str] = None
+    field_name: str
+    corrected_value: str
+
+class SimulateFixRequest(BaseModel):
+    scheme: str = "pension"
+    documents: List[ExtractedDocument]
+    overrides: List[SimulatedFieldOverride]
+
+class SimulateFixResponse(BaseModel):
+    original_score: int
+    projected_score: int
+    score_delta: int
+    updated_result: AuditResult
+    resolved_findings_count: int

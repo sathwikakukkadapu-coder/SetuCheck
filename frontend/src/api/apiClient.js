@@ -161,3 +161,40 @@ export async function fetchAdminAnalytics() {
   return await res.json();
 }
 
+export async function sendChatMessage({ message, language = 'en', audit_id, audit_result, history = [] }) {
+  const res = await fetch(`${API_BASE}/api/assistant/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message,
+      language,
+      audit_id,
+      audit_result,
+      history,
+    }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || "Failed to get AI response");
+  }
+  return await res.json();
+}
+
+export async function simulateAuditFixes({ scheme = 'pension', documents, overrides }) {
+  const res = await fetch(`${API_BASE}/api/assistant/simulate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      scheme,
+      documents,
+      overrides,
+    }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || "Simulation calculation failed");
+  }
+  return await res.json();
+}
+
+
