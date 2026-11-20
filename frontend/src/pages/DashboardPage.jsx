@@ -410,9 +410,6 @@ export default function DashboardPage({ auditResult, onGoToAssistant, onGoToRepo
       <div className="p-4 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-600 leading-relaxed text-center mb-12">
         <strong>Statutory Notice:</strong> {disclaimer}
       </div>
-
-      {/* SetuMitra Interactive AI Co-Pilot Floating Widget */}
-      <SetuMitraChat auditResult={activeResult} />
     </div>
   );
 }

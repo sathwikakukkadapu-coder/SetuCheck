@@ -38,8 +38,10 @@ const INITIAL_PROMPTS = {
   ]
 };
 
-export default function SetuMitraChat({ auditResult }) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function SetuMitraChat({ auditResult, isOpen: externalIsOpen, onToggle: externalOnToggle }) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen = externalOnToggle !== undefined ? externalOnToggle : setInternalIsOpen;
   const [language, setLanguage] = useState('en');
   const [inputMessage, setInputMessage] = useState('');
   const [messages, setMessages] = useState([
