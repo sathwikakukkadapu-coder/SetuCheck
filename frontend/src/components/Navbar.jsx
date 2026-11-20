@@ -1,41 +1,33 @@
 import React, { useState } from 'react';
 import { 
-  ShieldCheck, 
   Bot, 
   Menu, 
   X, 
   ArrowRight, 
   Languages, 
   Check, 
-  ExternalLink,
   ChevronDown
 } from 'lucide-react';
 import SetuCheckLogo from './SetuCheckLogo';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function Navbar({ 
   activePage, 
   setActivePage, 
   auditResult, 
-  onOpenChat, 
-  currentLang = 'en', 
-  onLanguageChange 
+  onOpenChat
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const { currentLang, changeLanguage, t, supportedLanguages } = useLanguage();
 
   const navItems = [
-    { id: 'landing', label: 'Home' },
-    { id: 'workspace', label: 'Upload & Audit' },
-    { id: 'dashboard', label: 'Audit Dashboard' },
-    { id: 'assistant', label: 'Vernacular Co-Pilot' },
-    { id: 'report', label: 'Official Dossier' },
-    { id: 'admin', label: 'Admin Rules' },
-  ];
-
-  const languages = [
-    { code: 'en', label: 'English', flag: '🇬🇧' },
-    { code: 'te', label: 'తెలుగు (Telugu)', flag: '🇮🇳' },
-    { code: 'hi', label: 'हिन्दी (Hindi)', flag: '🇮🇳' },
+    { id: 'landing', label: t.nav.landing },
+    { id: 'workspace', label: t.nav.workspace },
+    { id: 'dashboard', label: t.nav.dashboard },
+    { id: 'assistant', label: t.nav.assistant },
+    { id: 'report', label: t.nav.report },
+    { id: 'admin', label: t.nav.admin },
   ];
 
   const handleNavClick = (id) => {
@@ -44,7 +36,7 @@ export default function Navbar({
   };
 
   const handleSelectLanguage = (code) => {
-    if (onLanguageChange) onLanguageChange(code);
+    changeLanguage(code);
     setLangDropdownOpen(false);
   };
 
@@ -58,7 +50,13 @@ export default function Navbar({
             className="cursor-pointer transition-transform hover:scale-[1.01] active:scale-[0.99]" 
             onClick={() => handleNavClick('landing')}
           >
-            <SetuCheckLogo size={38} showText={true} subtitle={true} textLight={true} />
+            <SetuCheckLogo 
+              size={38} 
+              showText={true} 
+              subtitle={true} 
+              textLight={true} 
+              customSubtitle={t.nav.brandSub}
+            />
           </div>
 
           {/* Desktop Navigation Links */}
@@ -88,29 +86,34 @@ export default function Navbar({
             <div className="relative">
               <button
                 onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white bg-slate-800/90 border border-slate-700 hover:border-slate-600 transition"
+                className="flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-slate-800/90 border border-slate-700 hover:border-[#2DD4BF] hover:bg-slate-700 transition shadow-xs"
                 title="Select Interface Language"
               >
-                <Languages className="w-3.5 h-3.5 text-[#2DD4BF]" />
-                <span className="uppercase text-[11px] font-bold">{currentLang}</span>
-                <ChevronDown className="w-3 h-3 text-slate-400" />
+                <Languages className="w-4 h-4 text-[#2DD4BF]" />
+                <span className="uppercase text-xs font-extrabold text-[#2DD4BF]">
+                  {supportedLanguages.find(l => l.code === currentLang)?.native || currentLang.toUpperCase()}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </button>
 
               {langDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-44 bg-[#10243A] border border-slate-700 rounded-xl shadow-xl py-1.5 z-50 text-xs">
-                  {languages.map((l) => (
+                <div className="absolute right-0 mt-2 w-48 bg-[#10243A] border border-slate-700 rounded-2xl shadow-2xl py-2 z-50 text-xs animate-in fade-in zoom-in-95">
+                  <div className="px-3 py-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-800 mb-1">
+                    Select Language / భాష / भाषा
+                  </div>
+                  {supportedLanguages.map((l) => (
                     <button
                       key={l.code}
                       onClick={() => handleSelectLanguage(l.code)}
-                      className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-800 text-xs transition ${
-                        currentLang === l.code ? 'text-[#2DD4BF] font-bold bg-slate-800/50' : 'text-slate-300'
+                      className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between hover:bg-slate-800 text-xs transition ${
+                        currentLang === l.code ? 'text-[#2DD4BF] font-extrabold bg-slate-800/70' : 'text-slate-200'
                       }`}
                     >
-                      <span className="flex items-center space-x-2">
-                        <span>{l.flag}</span>
+                      <span className="flex items-center space-x-2.5">
+                        <span className="text-sm">{l.flag}</span>
                         <span>{l.label}</span>
                       </span>
-                      {currentLang === l.code && <Check className="w-3.5 h-3.5 text-[#2DD4BF]" />}
+                      {currentLang === l.code && <Check className="w-4 h-4 text-[#2DD4BF]" />}
                     </button>
                   ))}
                 </div>
@@ -123,7 +126,7 @@ export default function Navbar({
               className="inline-flex items-center space-x-1.5 text-xs font-bold bg-[#0D9488]/15 hover:bg-[#0D9488]/25 text-[#2DD4BF] border border-[#0D9488]/40 px-3 py-1.5 rounded-xl transition shadow-xs active:scale-95"
             >
               <Bot className="w-4 h-4 text-[#2DD4BF] animate-pulse" />
-              <span className="hidden sm:inline">SetuMitra AI</span>
+              <span className="hidden sm:inline">{t.nav.aiAssistant}</span>
             </button>
 
             {/* Primary Action Button */}
@@ -131,7 +134,7 @@ export default function Navbar({
               onClick={() => handleNavClick('workspace')}
               className="inline-flex items-center space-x-1.5 text-xs font-bold bg-gradient-to-r from-[#0D9488] to-[#2563EB] hover:from-[#14B8A6] hover:to-[#3B82F6] text-white px-3.5 py-2 rounded-xl shadow-md shadow-[#0D9488]/25 transition active:scale-95"
             >
-              <span>{auditResult ? 'New Audit' : 'Start Audit'}</span>
+              <span>{auditResult ? t.nav.newAudit : t.nav.startAudit}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
 

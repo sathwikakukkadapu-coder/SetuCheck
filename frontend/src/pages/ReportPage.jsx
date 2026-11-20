@@ -2,22 +2,19 @@ import React, { useState } from 'react';
 import { 
   Download, 
   Printer, 
-  FileCheck2, 
   Share2, 
   Check, 
-  Building2, 
   ArrowLeft, 
   ShieldCheck, 
-  ExternalLink,
-  QrCode,
-  Hash,
-  AlertTriangle,
-  Calendar,
   Lock
 } from 'lucide-react';
 import { getReportDownloadUrl } from '../api/apiClient';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function ReportPage({ auditResult, onBackToDashboard }) {
+  const { t } = useLanguage();
+  const r = t.report;
+
   const [copied, setCopied] = useState(false);
 
   if (!auditResult) {
@@ -34,13 +31,9 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
     scheme_name,
     readiness_score,
     total_documents,
-    issues_detected,
     high_priority_count,
     review_required_count,
-    informational_count,
-    passed_count,
     findings = [],
-    extracted_documents = [],
     timestamp,
     summary,
     sha256_hash,
@@ -69,7 +62,7 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
           className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-600 hover:text-[#10243A] transition"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Dashboard</span>
+          <span>{r.backBtn}</span>
         </button>
 
         <div className="flex items-center space-x-2.5">
@@ -78,7 +71,7 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
             className="inline-flex items-center space-x-1.5 text-xs font-bold bg-white border border-slate-300 hover:bg-slate-50 px-3.5 py-2 rounded-xl text-[#10243A] transition shadow-xs"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copied ID' : 'Share ID'}</span>
+            <span>{copied ? r.copiedId : r.shareId}</span>
           </button>
 
           <button
@@ -86,7 +79,7 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
             className="hidden sm:inline-flex items-center space-x-1.5 text-xs font-bold bg-white border border-slate-300 hover:bg-slate-50 px-3.5 py-2 rounded-xl text-[#10243A] transition shadow-xs"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Print Dossier</span>
+            <span>{r.printBtn}</span>
           </button>
 
           <a
@@ -97,7 +90,7 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
             className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#0D9488] to-[#2563EB] hover:from-[#14B8A6] hover:to-[#3B82F6] text-white font-extrabold px-4 py-2 rounded-xl text-xs shadow-md shadow-[#0D9488]/20 transition"
           >
             <Download className="w-4 h-4" />
-            <span>Download Official PDF</span>
+            <span>{r.downloadBtn}</span>
           </a>
         </div>
       </div>
@@ -111,10 +104,10 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
             <div className="flex items-center space-x-2 mb-1">
               <ShieldCheck className="w-6 h-6 text-[#0D9488]" />
               <span className="font-black text-xl tracking-tight text-[#10243A]">SETU<span className="text-[#0D9488]">CHECK</span></span>
-              <span className="text-[10px] bg-slate-900 text-white font-mono px-2 py-0.5 rounded">CIVIC AUDIT</span>
+              <span className="text-[10px] bg-slate-900 text-white font-mono px-2 py-0.5 rounded">{r.certTag}</span>
             </div>
             <p className="text-xs text-slate-500 font-semibold">
-              National Welfare Pre-Submission Concordance Certificate
+              {r.certTitle}
             </p>
             <p className="text-[11px] text-slate-400 font-mono mt-1">
               Dossier ID: {audit_id} &bull; Generated: {new Date(timestamp).toLocaleString()}
@@ -122,7 +115,7 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
           </div>
 
           <div className="text-right sm:text-right">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Application Readiness</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{r.readinessLabel}</div>
             <div className="text-3xl font-black text-[#10243A] tracking-tight">{readiness_score}/100</div>
             <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 border ${
               readiness_score >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
@@ -137,28 +130,28 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
         {/* Audit Meta Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 border-b border-slate-200 text-xs">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Target Scheme</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{r.targetScheme}</span>
             <strong className="text-[#10243A]">{scheme_name}</strong>
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Documents Audited</span>
-            <strong className="text-[#10243A]">{total_documents} Supporting Proofs</strong>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{r.docsAudited}</span>
+            <strong className="text-[#10243A]">{total_documents}</strong>
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Critical Findings</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{r.criticalFindings}</span>
             <strong className={high_priority_count > 0 ? "text-[#DC2626]" : "text-[#16A34A]"}>
-              {high_priority_count} Issues
+              {high_priority_count}
             </strong>
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Manual Reviews</span>
-            <strong className="text-amber-600">{review_required_count} Warnings</strong>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{r.manualReviews}</span>
+            <strong className="text-amber-600">{review_required_count}</strong>
           </div>
         </div>
 
         {/* Executive Summary */}
         <div className="py-6 border-b border-slate-200 text-xs">
-          <h3 className="font-bold uppercase tracking-wider text-slate-500 mb-2">Executive Audit Assessment</h3>
+          <h3 className="font-bold uppercase tracking-wider text-slate-500 mb-2">{r.execSummaryTitle}</h3>
           <p className="text-slate-700 leading-relaxed bg-[#F5F8FC] p-4 rounded-2xl border border-slate-200">
             {summary}
           </p>
@@ -167,17 +160,17 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
         {/* Concordance Findings Table */}
         <div className="py-6 border-b border-slate-200">
           <h3 className="font-bold uppercase tracking-wider text-xs text-slate-500 mb-3">
-            Concordance Findings Matrix ({findings.length})
+            {r.matrixTitle} ({findings.length})
           </h3>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
               <thead className="bg-[#F5F8FC] border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
                 <tr>
-                  <th className="py-2.5 px-3">Field</th>
-                  <th className="py-2.5 px-3">Severity</th>
-                  <th className="py-2.5 px-3">Extracted Values</th>
-                  <th className="py-2.5 px-3">Recommended Correction</th>
+                  <th className="py-2.5 px-3">{r.colField}</th>
+                  <th className="py-2.5 px-3">{r.colSeverity}</th>
+                  <th className="py-2.5 px-3">{r.colValues}</th>
+                  <th className="py-2.5 px-3">{r.colCorrection}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -215,7 +208,7 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
             <div className="space-y-0.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#2DD4BF] flex items-center gap-1">
                 <Lock className="w-3.5 h-3.5" />
-                <span>SHA-256 Tamper-Evident Integrity Fingerprint:</span>
+                <span>{r.sha256Label}</span>
               </span>
               <span className="font-mono text-[11px] text-slate-300 break-all select-all">
                 {sha256_hash || "8f4b1c9e2d3a0f7e6b5c4d3e2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f"}
@@ -229,7 +222,7 @@ export default function ReportPage({ auditResult, onBackToDashboard }) {
           </div>
 
           <div className="p-4 bg-amber-50/70 border border-amber-200/80 rounded-2xl text-[11px] text-amber-900">
-            <strong>Statutory Disclaimer:</strong> {disclaimer || "SetuCheck is an internal pre-submission readiness tool designed to detect discrepancies. It does not replace official UIDAI authentication, bank API switches, or statutory approval by government welfare authorities."}
+            <strong>{r.disclaimerPrefix}</strong> {disclaimer || "SetuCheck is an internal pre-submission readiness tool designed to detect discrepancies. It does not replace official UIDAI authentication, bank API switches, or statutory approval by government welfare authorities."}
           </div>
         </div>
 

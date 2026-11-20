@@ -12,14 +12,11 @@ import {
   UserCheck, 
   HelpCircle,
   FileSearch,
-  Eye,
   RefreshCw,
   Lock,
   Edit2,
   Check,
-  X,
-  AlertTriangle,
-  Info
+  X
 } from 'lucide-react';
 import { 
   uploadDocumentFiles, 
@@ -27,6 +24,7 @@ import {
   runAudit, 
   fetchDemoCases 
 } from '../api/apiClient';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const SCHEME_OPTIONS = [
   { id: 'pension', name: 'National Old Age Pension Scheme (NOAPS)', requiredDocs: ['Identity (Aadhaar)', 'Bank Passbook', 'Address Proof'] },
@@ -35,6 +33,9 @@ const SCHEME_OPTIONS = [
 ];
 
 export default function WorkspacePage({ onAuditComplete }) {
+  const { t } = useLanguage();
+  const w = t.workspace;
+
   const [selectedScheme, setSelectedScheme] = useState('pension');
   const [demoCases, setDemoCases] = useState([]);
   const [selectedDemoId, setSelectedDemoId] = useState('');
@@ -43,11 +44,11 @@ export default function WorkspacePage({ onAuditComplete }) {
   const [currentStep, setCurrentStep] = useState(1);
 
   // Upload State
-  const [uploadedFiles, setUploadedFiles] = useState([]); // [{ file, type, id, status, filename, size, synthetic }]
+  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [extractedDocs, setExtractedDocs] = useState([]);
   
   // Field Editing Modal State
-  const [editingField, setEditingField] = useState(null); // { docIndex, fieldKey, currentValue, label }
+  const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState('');
 
   const [isUploading, setIsUploading] = useState(false);
@@ -82,7 +83,7 @@ export default function WorkspacePage({ onAuditComplete }) {
         synthetic: true
       }))
     );
-    setCurrentStep(3); // Jump to Step 3 (Review & Correct Extracted Information)
+    setCurrentStep(3);
   };
 
   // Handle local file selection
@@ -137,7 +138,6 @@ export default function WorkspacePage({ onAuditComplete }) {
       setIsUploading(true);
       setErrorMessage('');
 
-      // Filter real files (not synthetic)
       const realEntries = uploadedFiles.filter(item => item.file);
       if (!realEntries.length && extractedDocs.length > 0) {
         setIsUploading(false);
@@ -151,7 +151,6 @@ export default function WorkspacePage({ onAuditComplete }) {
       const uploadResp = await uploadDocumentFiles(filesToUpload, typesToUpload);
       const docIds = uploadResp.map(r => r.doc_id);
 
-      // Extract fields via PyMuPDF/OCR
       const extractResp = await extractDocumentFields(docIds);
       setExtractedDocs(extractResp);
 
@@ -162,7 +161,7 @@ export default function WorkspacePage({ onAuditComplete }) {
         }))
       );
 
-      setCurrentStep(3); // Advance to Review & Correct
+      setCurrentStep(3);
     } catch (err) {
       setErrorMessage(`Extraction failed: ${err.message}`);
     } finally {
@@ -241,7 +240,7 @@ export default function WorkspacePage({ onAuditComplete }) {
             <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold ${
               currentStep >= 1 ? 'bg-[#0D9488] text-white shadow-sm' : 'bg-slate-200 text-slate-600'
             }`}>1</span>
-            <span className={currentStep >= 1 ? 'text-[#10243A]' : ''}>Scheme Selection</span>
+            <span className={currentStep >= 1 ? 'text-[#10243A]' : ''}>{w.step1}</span>
           </div>
           <div className="h-0.5 flex-1 mx-3 bg-slate-200">
             <div className={`h-full bg-[#0D9488] transition-all duration-300 ${
@@ -252,7 +251,7 @@ export default function WorkspacePage({ onAuditComplete }) {
             <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold ${
               currentStep >= 2 ? 'bg-[#0D9488] text-white shadow-sm' : 'bg-slate-200 text-slate-600'
             }`}>2</span>
-            <span className={currentStep >= 2 ? 'text-[#10243A]' : ''}>Upload Documents</span>
+            <span className={currentStep >= 2 ? 'text-[#10243A]' : ''}>{w.step2}</span>
           </div>
           <div className="h-0.5 flex-1 mx-3 bg-slate-200">
             <div className={`h-full bg-[#0D9488] transition-all duration-300 ${
@@ -263,7 +262,7 @@ export default function WorkspacePage({ onAuditComplete }) {
             <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold ${
               currentStep >= 3 ? 'bg-[#0D9488] text-white shadow-sm' : 'bg-slate-200 text-slate-600'
             }`}>3</span>
-            <span className={currentStep >= 3 ? 'text-[#10243A]' : ''}>Review & Audit</span>
+            <span className={currentStep >= 3 ? 'text-[#10243A]' : ''}>{w.step3}</span>
           </div>
         </div>
       </div>
@@ -273,15 +272,15 @@ export default function WorkspacePage({ onAuditComplete }) {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-[#10243A] tracking-tight">
-              Pre-Submission Applicant Workspace
+              {w.heading}
             </h1>
             <p className="text-xs text-[#64748B] mt-1">
-              Cross-audit welfare documents before submitting to MeeSeva or the government department.
+              {w.subheading}
             </p>
           </div>
 
           <div className="flex items-center space-x-3">
-            <label className="text-xs font-bold text-[#10243A] whitespace-nowrap">Target Scheme:</label>
+            <label className="text-xs font-bold text-[#10243A] whitespace-nowrap">{w.targetSchemeLabel}</label>
             <select
               value={selectedScheme}
               onChange={(e) => setSelectedScheme(e.target.value)}
@@ -299,12 +298,12 @@ export default function WorkspacePage({ onAuditComplete }) {
           <div className="flex items-center space-x-2 text-[#0D9488] font-medium">
             <Building2 className="w-4 h-4 shrink-0" />
             <span>
-              <strong>Mandatory for {SCHEME_OPTIONS.find(s => s.id === selectedScheme)?.name}:</strong>{' '}
+              <strong>{w.mandatoryBannerPrefix} {SCHEME_OPTIONS.find(s => s.id === selectedScheme)?.name}:</strong>{' '}
               {SCHEME_OPTIONS.find(s => s.id === selectedScheme)?.requiredDocs.join(', ')}
             </span>
           </div>
           <span className="text-[11px] text-[#0D9488] font-bold bg-white px-2.5 py-1 rounded-lg border border-[#0D9488]/20">
-            DBT Direct Benefit Transfer Rules Active
+            {w.dbtBadge}
           </span>
         </div>
       </div>
@@ -315,15 +314,15 @@ export default function WorkspacePage({ onAuditComplete }) {
           <div className="flex items-center space-x-2 text-[#2DD4BF]">
             <Sparkles className="w-5 h-5 animate-pulse" />
             <h2 className="font-bold text-sm tracking-tight text-white uppercase tracking-wider">
-              Judges & Evaluators Demo Suite (5 Synthetic Fixtures)
+              {w.demoSuiteTitle}
             </h2>
           </div>
           <span className="text-[10px] bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1 rounded-full font-mono">
-            Zero Upload Wait Time
+            {w.zeroWait}
           </span>
         </div>
         <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-          Click any scenario below to load pre-verified synthetic records and immediately test cross-document concordance.
+          {w.demoSuiteDesc}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
@@ -359,10 +358,10 @@ export default function WorkspacePage({ onAuditComplete }) {
         <div className="flex items-center space-x-2">
           <Lock className="w-4 h-4 text-[#0D9488]" />
           <span>
-            <strong>Privacy Assured:</strong> All document files are processed in ephemeral memory. Sensitive 12-digit Aadhaar and bank account numbers are automatically masked.
+            {w.privacyBanner}
           </span>
         </div>
-        <span className="text-[11px] font-mono text-slate-400">Memory Cleanup: Active</span>
+        <span className="text-[11px] font-mono text-slate-400">{w.memoryActive}</span>
       </div>
 
       {/* Step 2: 3-Card Document Upload Grid */}
@@ -379,16 +378,16 @@ export default function WorkspacePage({ onAuditComplete }) {
           <div>
             <div className="flex items-center space-x-2 text-[#10243A] font-bold text-sm mb-1">
               <UserCheck className="w-4 h-4 text-[#2563EB]" />
-              <span>1. Identity Proof</span>
+              <span>{w.identityCard.title}</span>
             </div>
             <p className="text-[11px] text-[#64748B] mb-4">
-              Aadhaar, Voter ID or Passport showing applicant name, DOB, and address.
+              {w.identityCard.desc}
             </p>
 
             <label className="border-2 border-dashed border-slate-300 hover:border-[#2563EB] bg-[#F5F8FC] hover:bg-blue-50/40 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition text-center min-h-[140px]">
               <Upload className="w-6 h-6 text-slate-400 mb-2" />
-              <span className="text-xs font-bold text-[#10243A]">Upload Identity File</span>
-              <span className="text-[10px] text-[#64748B] mt-1">PDF, JPG, PNG up to 15MB</span>
+              <span className="text-xs font-bold text-[#10243A]">{w.identityCard.uploadBtn}</span>
+              <span className="text-[10px] text-[#64748B] mt-1">{w.identityCard.formatNote}</span>
               <input 
                 type="file" 
                 accept=".pdf,.jpg,.jpeg,.png" 
@@ -399,7 +398,7 @@ export default function WorkspacePage({ onAuditComplete }) {
           </div>
           <div className="mt-3 text-center">
             <span className="text-[10px] font-bold text-[#64748B] bg-slate-100 px-2 py-0.5 rounded-full">
-              {uploadedFiles.filter(f => f.type === 'identity').length} Staged
+              {uploadedFiles.filter(f => f.type === 'identity').length} {w.identityCard.staged}
             </span>
           </div>
         </div>
@@ -415,16 +414,16 @@ export default function WorkspacePage({ onAuditComplete }) {
           <div>
             <div className="flex items-center space-x-2 text-[#10243A] font-bold text-sm mb-1">
               <Building2 className="w-4 h-4 text-[#0D9488]" />
-              <span>2. Bank Passbook</span>
+              <span>{w.bankCard.title}</span>
             </div>
             <p className="text-[11px] text-[#64748B] mb-4">
-              Passbook front page or statement showing account number and 11-digit IFSC code.
+              {w.bankCard.desc}
             </p>
 
             <label className="border-2 border-dashed border-slate-300 hover:border-[#0D9488] bg-[#F5F8FC] hover:bg-teal-50/40 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition text-center min-h-[140px]">
               <Upload className="w-6 h-6 text-slate-400 mb-2" />
-              <span className="text-xs font-bold text-[#10243A]">Upload Bank Passbook</span>
-              <span className="text-[10px] text-[#64748B] mt-1">PDF, JPG, PNG up to 15MB</span>
+              <span className="text-xs font-bold text-[#10243A]">{w.bankCard.uploadBtn}</span>
+              <span className="text-[10px] text-[#64748B] mt-1">{w.bankCard.formatNote}</span>
               <input 
                 type="file" 
                 accept=".pdf,.jpg,.jpeg,.png" 
@@ -435,7 +434,7 @@ export default function WorkspacePage({ onAuditComplete }) {
           </div>
           <div className="mt-3 text-center">
             <span className="text-[10px] font-bold text-[#64748B] bg-slate-100 px-2 py-0.5 rounded-full">
-              {uploadedFiles.filter(f => f.type === 'bank_passbook').length} Staged
+              {uploadedFiles.filter(f => f.type === 'bank_passbook').length} {w.bankCard.staged}
             </span>
           </div>
         </div>
@@ -451,16 +450,16 @@ export default function WorkspacePage({ onAuditComplete }) {
           <div>
             <div className="flex items-center space-x-2 text-[#10243A] font-bold text-sm mb-1">
               <MapPin className="w-4 h-4 text-[#38BDF8]" />
-              <span>3. Address Proof</span>
+              <span>{w.addressCard.title}</span>
             </div>
             <p className="text-[11px] text-[#64748B] mb-4">
-              Electricity bill, ration card, or domicile proof verifying local jurisdiction.
+              {w.addressCard.desc}
             </p>
 
             <label className="border-2 border-dashed border-slate-300 hover:border-[#38BDF8] bg-[#F5F8FC] hover:bg-sky-50/40 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition text-center min-h-[140px]">
               <Upload className="w-6 h-6 text-slate-400 mb-2" />
-              <span className="text-xs font-bold text-[#10243A]">Upload Address Proof</span>
-              <span className="text-[10px] text-[#64748B] mt-1">PDF, JPG, PNG up to 15MB</span>
+              <span className="text-xs font-bold text-[#10243A]">{w.addressCard.uploadBtn}</span>
+              <span className="text-[10px] text-[#64748B] mt-1">{w.addressCard.formatNote}</span>
               <input 
                 type="file" 
                 accept=".pdf,.jpg,.jpeg,.png" 
@@ -471,7 +470,7 @@ export default function WorkspacePage({ onAuditComplete }) {
           </div>
           <div className="mt-3 text-center">
             <span className="text-[10px] font-bold text-[#64748B] bg-slate-100 px-2 py-0.5 rounded-full">
-              {uploadedFiles.filter(f => f.type === 'address_proof').length} Staged
+              {uploadedFiles.filter(f => f.type === 'address_proof').length} {w.addressCard.staged}
             </span>
           </div>
         </div>
@@ -482,8 +481,8 @@ export default function WorkspacePage({ onAuditComplete }) {
         <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-sm mb-8 civic-card-shadow">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-[#10243A] text-sm">Staged Documents ({uploadedFiles.length})</h3>
-              <p className="text-[11px] text-[#64748B]">Ready for OCR extraction and cross-document concordance</p>
+              <h3 className="font-bold text-[#10243A] text-sm">{w.stagedDocsTitle} ({uploadedFiles.length})</h3>
+              <p className="text-[11px] text-[#64748B]">{w.stagedDocsSubtitle}</p>
             </div>
 
             {uploadedFiles.some(f => f.file && f.status === 'ready') && (
@@ -493,7 +492,7 @@ export default function WorkspacePage({ onAuditComplete }) {
                 className="inline-flex items-center space-x-1.5 text-xs font-bold bg-[#10243A] hover:bg-slate-800 text-white px-4 py-2 rounded-xl transition shadow-sm"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isUploading ? 'animate-spin' : ''}`} />
-                <span>{isUploading ? 'Extracting via Tesseract & PyMuPDF...' : 'Extract Fields with Confidence'}</span>
+                <span>{isUploading ? w.extractingBtn : w.extractBtn}</span>
               </button>
             )}
           </div>
@@ -542,20 +541,20 @@ export default function WorkspacePage({ onAuditComplete }) {
                   <FileSearch className="w-5 h-5 text-[#0D9488]" />
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#10243A]">
-                      Step 3: Review Extracted Information & Confidence
+                      {w.step3ReviewTitle}
                     </h4>
                     <p className="text-[11px] text-[#64748B]">
-                      Correct any blurry OCR readings before running the audit so false deductions are avoided.
+                      {w.step3ReviewSubtitle}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2 text-[10px] text-[#64748B]">
                   <span className="flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    &ge;75% High
+                    {w.highConfidence}
                   </span>
                   <span className="flex items-center gap-1 font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                    &lt;75% Review
+                    {w.reviewConfidence}
                   </span>
                 </div>
               </div>
@@ -588,7 +587,7 @@ export default function WorkspacePage({ onAuditComplete }) {
                               <button
                                 onClick={() => handleStartEditField(docIdx, 'name', ed.name.value, 'Applicant Name')}
                                 className="text-slate-400 hover:text-[#0D9488] p-1"
-                                title="Edit Field"
+                                title={w.editTooltip}
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
@@ -612,7 +611,7 @@ export default function WorkspacePage({ onAuditComplete }) {
                               <button
                                 onClick={() => handleStartEditField(docIdx, 'dob', ed.dob.value, 'Date of Birth')}
                                 className="text-slate-400 hover:text-[#0D9488] p-1"
-                                title="Edit Field"
+                                title={w.editTooltip}
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
@@ -634,7 +633,7 @@ export default function WorkspacePage({ onAuditComplete }) {
                               <button
                                 onClick={() => handleStartEditField(docIdx, 'bank_account_no', ed.bank_account_no.value, 'Bank Account Number')}
                                 className="text-slate-400 hover:text-[#0D9488] p-1"
-                                title="Edit Field"
+                                title={w.editTooltip}
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
@@ -658,7 +657,7 @@ export default function WorkspacePage({ onAuditComplete }) {
                               <button
                                 onClick={() => handleStartEditField(docIdx, 'ifsc_code', ed.ifsc_code.value, 'IFSC Code')}
                                 className="text-slate-400 hover:text-[#0D9488] p-1"
-                                title="Edit Field"
+                                title={w.editTooltip}
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
@@ -682,7 +681,7 @@ export default function WorkspacePage({ onAuditComplete }) {
                               <button
                                 onClick={() => handleStartEditField(docIdx, 'address', ed.address.value, 'Residential Address')}
                                 className="text-slate-400 hover:text-[#0D9488] p-1"
-                                title="Edit Field"
+                                title={w.editTooltip}
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
@@ -707,7 +706,7 @@ export default function WorkspacePage({ onAuditComplete }) {
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <Edit2 className="w-4 h-4 text-[#0D9488]" />
-                <h3 className="font-bold text-sm text-[#10243A]">Manual Field Correction</h3>
+                <h3 className="font-bold text-sm text-[#10243A]">{w.modal.title}</h3>
               </div>
               <button 
                 onClick={() => setEditingField(null)}
@@ -718,11 +717,11 @@ export default function WorkspacePage({ onAuditComplete }) {
             </div>
 
             <p className="text-xs text-[#64748B] mb-4">
-              Override OCR read for <strong>{editingField.label}</strong>. Correcting verified details prevents false deductions during audit.
+              {w.modal.descPrefix} <strong>{editingField.label}</strong>. {w.modal.descSuffix}
             </p>
 
             <div className="space-y-3 mb-6">
-              <label className="text-xs font-bold text-[#10243A] block">Corrected Value:</label>
+              <label className="text-xs font-bold text-[#10243A] block">{w.modal.label}</label>
               <input
                 type="text"
                 value={editValue}
@@ -738,14 +737,14 @@ export default function WorkspacePage({ onAuditComplete }) {
                 onClick={() => setEditingField(null)}
                 className="px-4 py-2 rounded-xl text-xs font-semibold text-[#64748B] hover:bg-slate-100 transition"
               >
-                Cancel
+                {w.modal.cancel}
               </button>
               <button
                 onClick={handleSaveFieldEdit}
                 className="inline-flex items-center space-x-1.5 px-5 py-2 rounded-xl text-xs font-bold bg-[#0D9488] hover:bg-[#14B8A6] text-white shadow-md transition"
               >
                 <Check className="w-3.5 h-3.5" />
-                <span>Save Correction</span>
+                <span>{w.modal.save}</span>
               </button>
             </div>
           </div>
@@ -764,7 +763,7 @@ export default function WorkspacePage({ onAuditComplete }) {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm civic-card-shadow">
         <div className="text-xs text-[#64748B] flex items-center space-x-2">
           <HelpCircle className="w-4 h-4 text-slate-400 shrink-0" />
-          <span>SetuCheck will execute deterministic name concordance, RBI IFSC validation, and completeness rules.</span>
+          <span>{w.actionBarHelp}</span>
         </div>
 
         <button
@@ -777,7 +776,7 @@ export default function WorkspacePage({ onAuditComplete }) {
           }`}
         >
           <FileSearch className={`w-4 h-4 ${isAuditing ? 'animate-spin' : ''}`} />
-          <span>{isAuditing ? 'Running Deterministic Audit...' : 'Execute Compliance Audit'}</span>
+          <span>{isAuditing ? w.executingBtn : w.executeBtn}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

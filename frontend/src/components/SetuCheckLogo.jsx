@@ -1,6 +1,12 @@
 import React from 'react';
 
-export default function SetuCheckLogo({ size = 36, showText = true, subtitle = true, textLight = false }) {
+export default function SetuCheckLogo({ 
+  size = 36, 
+  showText = true, 
+  subtitle = true, 
+  textLight = false,
+  customSubtitle = null 
+}) {
   return (
     <div className="flex items-center space-x-3 select-none">
       {/* Custom Setu (Bridge) + Shield Emblem */}
@@ -73,8 +79,8 @@ export default function SetuCheckLogo({ size = 36, showText = true, subtitle = t
             </span>
           </div>
           {subtitle && (
-            <span className={`text-[10px] font-medium tracking-wide mt-1 ${textLight ? 'text-slate-400' : 'text-[#64748B]'}`}>
-              Explainable Welfare Document Auditor
+            <span className={`text-[10px] font-medium tracking-wide mt-1 line-clamp-1 ${textLight ? 'text-slate-300' : 'text-[#64748B]'}`}>
+              {customSubtitle || "Explainable Welfare Document Auditor"}
             </span>
           )}
         </div>

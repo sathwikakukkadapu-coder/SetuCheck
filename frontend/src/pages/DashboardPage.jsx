@@ -9,21 +9,13 @@ import {
   Download, 
   ArrowRight,
   Filter,
-  BarChart3,
   Layers,
   Sparkles,
-  CheckSquare,
-  Wand2,
   RotateCcw,
   Building2,
   Calendar,
   Hash,
-  Share2,
-  FileSearch,
-  Eye,
-  Info,
-  ExternalLink,
-  ChevronRight
+  Eye
 } from 'lucide-react';
 import ScoreGauge from '../components/ScoreGauge';
 import DiscrepancyCard from '../components/DiscrepancyCard';
@@ -31,7 +23,7 @@ import DocumentComparisonView from '../components/DocumentComparisonView';
 import EvidenceModal from '../components/EvidenceModal';
 import { AadhaarMockup, BankPassbookMockup, UtilityBillMockup } from '../components/DocumentVisualizer';
 import { simulateAuditFixes, getReportDownloadUrl } from '../api/apiClient';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function DashboardPage({ 
   auditResult, 
@@ -39,6 +31,9 @@ export default function DashboardPage({
   onGoToReport,
   onGoToWorkspace
 }) {
+  const { t } = useLanguage();
+  const d = t.dashboard;
+
   const [filterSeverity, setFilterSeverity] = useState('ALL');
   const [selectedFinding, setSelectedFinding] = useState(null);
   const [activeTab, setActiveTab] = useState('findings'); // 'findings' | 'comparison' | 'mockups'
@@ -76,21 +71,15 @@ export default function DashboardPage({
   const {
     readiness_score,
     category_scores,
-    deductions = [],
     total_documents,
-    issues_detected,
     high_priority_count,
     review_required_count,
-    informational_count,
     passed_count,
     findings = [],
     extracted_documents = [],
     scheme_name,
     audit_id,
-    timestamp,
-    summary,
-    sha256_hash,
-    disclaimer
+    timestamp
   } = activeResult;
 
   // Handle What-If candidate fix simulation
@@ -161,25 +150,25 @@ export default function DashboardPage({
           <div>
             <div className="flex items-center space-x-2 text-xs font-bold text-[#0D9488] uppercase tracking-wider mb-1">
               <ShieldCheck className="w-4 h-4" />
-              <span>Official Pre-Submission Audit Dossier</span>
+              <span>{d.dossierBadge}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-[#10243A] tracking-tight">
-              Application Readiness Dashboard
+              {d.heading}
             </h1>
             <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-[#64748B]">
               <span className="flex items-center gap-1 font-mono">
                 <Hash className="w-3.5 h-3.5 text-slate-400" />
-                Ref: <strong className="text-[#10243A]">{audit_id}</strong>
+                {d.refLabel} <strong className="text-[#10243A]">{audit_id}</strong>
               </span>
               <span>&bull;</span>
               <span className="flex items-center gap-1">
                 <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                Scheme: <strong className="text-[#10243A]">{scheme_name}</strong>
+                {d.schemeLabel} <strong className="text-[#10243A]">{scheme_name}</strong>
               </span>
               <span>&bull;</span>
               <span className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                Audited: {new Date(timestamp).toLocaleString()}
+                {d.auditedLabel} {new Date(timestamp).toLocaleString()}
               </span>
             </div>
           </div>
@@ -190,7 +179,7 @@ export default function DashboardPage({
               className="inline-flex items-center space-x-1.5 text-xs font-bold bg-[#0D9488]/10 hover:bg-[#0D9488]/20 text-[#0D9488] px-3.5 py-2.5 rounded-xl border border-[#0D9488]/30 transition"
             >
               <Languages className="w-4 h-4" />
-              <span>Vernacular Voice Guidance</span>
+              <span>{d.vernacularVoiceBtn}</span>
             </button>
 
             <a
@@ -201,7 +190,7 @@ export default function DashboardPage({
               className="inline-flex items-center space-x-1.5 text-xs font-bold bg-[#10243A] hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl shadow-md transition"
             >
               <Download className="w-4 h-4" />
-              <span>Download PDF Dossier</span>
+              <span>{d.downloadPdfBtn}</span>
             </a>
           </div>
         </div>
@@ -212,7 +201,7 @@ export default function DashboardPage({
             <div className="flex items-center space-x-2">
               <Sparkles className="w-4 h-4 text-[#0D9488] shrink-0" />
               <span>
-                <strong>What-If Simulation Active:</strong> Score boosted from <strong>{simulationStats?.prevScore}</strong> to <strong className="text-emerald-700">{simulationStats?.newScore}</strong> (+{simulationStats?.scoreDelta} pts).
+                <strong>{d.simActive} {simulationStats?.prevScore}</strong> &rarr; <strong className="text-emerald-700">{simulationStats?.newScore}</strong> (+{simulationStats?.scoreDelta} pts).
               </span>
             </div>
             <button
@@ -220,7 +209,7 @@ export default function DashboardPage({
               className="inline-flex items-center space-x-1 text-teal-700 hover:text-teal-900 font-bold bg-white px-2.5 py-1 rounded-lg border border-teal-200 transition"
             >
               <RotateCcw className="w-3 h-3" />
-              <span>Reset</span>
+              <span>{d.resetSim}</span>
             </button>
           </div>
         )}
@@ -241,38 +230,38 @@ export default function DashboardPage({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-sm civic-card-shadow">
               <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-1">
-                <span>DOCUMENTS</span>
+                <span>{d.kpiDocs}</span>
                 <FileText className="w-4 h-4 text-slate-400" />
               </div>
               <div className="text-2xl font-black text-[#10243A]">{total_documents}</div>
-              <div className="text-[10px] text-slate-500 mt-1">Staged & Concorded</div>
+              <div className="text-[10px] text-slate-500 mt-1">{d.kpiDocsSub}</div>
             </div>
 
             <div className="bg-white p-4 rounded-3xl border border-rose-200/80 bg-rose-50/20 shadow-sm civic-card-shadow">
               <div className="flex items-center justify-between text-[11px] font-bold text-[#DC2626] mb-1">
-                <span>CRITICAL</span>
+                <span>{d.kpiCritical}</span>
                 <AlertCircle className="w-4 h-4 text-[#DC2626]" />
               </div>
               <div className="text-2xl font-black text-[#DC2626]">{high_priority_count}</div>
-              <div className="text-[10px] text-rose-700 mt-1">Fatal Rejection Risk</div>
+              <div className="text-[10px] text-rose-700 mt-1">{d.kpiCriticalSub}</div>
             </div>
 
             <div className="bg-white p-4 rounded-3xl border border-amber-200/80 bg-amber-50/20 shadow-sm civic-card-shadow">
               <div className="flex items-center justify-between text-[11px] font-bold text-amber-600 mb-1">
-                <span>REVIEW</span>
+                <span>{d.kpiReview}</span>
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
               </div>
               <div className="text-2xl font-black text-amber-700">{review_required_count}</div>
-              <div className="text-[10px] text-amber-800 mt-1">Manual Check Needed</div>
+              <div className="text-[10px] text-amber-800 mt-1">{d.kpiReviewSub}</div>
             </div>
 
             <div className="bg-white p-4 rounded-3xl border border-emerald-200/80 bg-emerald-50/20 shadow-sm civic-card-shadow">
               <div className="flex items-center justify-between text-[11px] font-bold text-[#16A34A] mb-1">
-                <span>VALIDATED</span>
+                <span>{d.kpiValidated}</span>
                 <CheckCircle2 className="w-4 h-4 text-[#16A34A]" />
               </div>
               <div className="text-2xl font-black text-[#16A34A]">{passed_count}</div>
-              <div className="text-[10px] text-emerald-700 mt-1">Concordant Fields</div>
+              <div className="text-[10px] text-emerald-700 mt-1">{d.kpiValidatedSub}</div>
             </div>
           </div>
 
@@ -281,14 +270,14 @@ export default function DashboardPage({
             <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm civic-card-shadow">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-black uppercase tracking-wider text-[#10243A]">
-                  4-Category Explainable Score Rubric Breakdown
+                  {d.rubricTitle}
                 </span>
-                <span className="text-[11px] text-slate-400 font-mono">Total Max: 100 pts</span>
+                <span className="text-[11px] text-slate-400 font-mono">Max: 100</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-3 bg-[#F5F8FC] rounded-2xl border border-slate-200">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase">Completeness</div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">{d.rubricCompleteness}</div>
                   <div className="text-lg font-black text-[#10243A]">
                     {category_scores.completeness_score} <span className="text-xs text-slate-400">/ 30</span>
                   </div>
@@ -301,7 +290,7 @@ export default function DashboardPage({
                 </div>
 
                 <div className="p-3 bg-[#F5F8FC] rounded-2xl border border-slate-200">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase">Consistency</div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">{d.rubricConsistency}</div>
                   <div className="text-lg font-black text-[#10243A]">
                     {category_scores.consistency_score} <span className="text-xs text-slate-400">/ 30</span>
                   </div>
@@ -314,7 +303,7 @@ export default function DashboardPage({
                 </div>
 
                 <div className="p-3 bg-[#F5F8FC] rounded-2xl border border-slate-200">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase">Validation</div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">{d.rubricValidation}</div>
                   <div className="text-lg font-black text-[#10243A]">
                     {category_scores.validation_score} <span className="text-xs text-slate-400">/ 20</span>
                   </div>
@@ -327,7 +316,7 @@ export default function DashboardPage({
                 </div>
 
                 <div className="p-3 bg-[#F5F8FC] rounded-2xl border border-slate-200">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase">Quality (OCR)</div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">{d.rubricQuality}</div>
                   <div className="text-lg font-black text-[#10243A]">
                     {category_scores.quality_score} <span className="text-xs text-slate-400">/ 20</span>
                   </div>
@@ -356,7 +345,7 @@ export default function DashboardPage({
           }`}
         >
           <AlertCircle className="w-3.5 h-3.5" />
-          <span>Discrepancy Findings ({findings.length})</span>
+          <span>{d.tabFindings} ({findings.length})</span>
         </button>
 
         <button
@@ -368,7 +357,7 @@ export default function DashboardPage({
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>Concordance Matrix</span>
+          <span>{d.tabMatrix}</span>
         </button>
 
         <button
@@ -380,7 +369,7 @@ export default function DashboardPage({
           }`}
         >
           <Eye className="w-3.5 h-3.5" />
-          <span>Indian Document Mockups</span>
+          <span>{d.tabMockups}</span>
         </button>
       </div>
 
@@ -392,16 +381,16 @@ export default function DashboardPage({
           <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs">
             <div className="flex items-center space-x-2 text-xs font-bold text-[#10243A]">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <span>Filter Findings:</span>
+              <span>{d.filterLabel}</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
               {[
-                { id: 'ALL', label: 'All Findings' },
-                { id: 'HIGH', label: 'Critical Issues' },
-                { id: 'REVIEW', label: 'Requires Review' },
-                { id: 'INFO', label: 'Informational' },
-                { id: 'PASSED', label: 'Validated (Passed)' },
+                { id: 'ALL', label: d.filterAll },
+                { id: 'HIGH', label: d.filterHigh },
+                { id: 'REVIEW', label: d.filterReview },
+                { id: 'INFO', label: d.filterInfo },
+                { id: 'PASSED', label: d.filterPassed },
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -423,8 +412,8 @@ export default function DashboardPage({
             {filteredFindings.length === 0 ? (
               <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center civic-card-shadow">
                 <CheckCircle2 className="w-12 h-12 text-[#16A34A] mx-auto mb-3" />
-                <h3 className="font-bold text-[#10243A] text-base mb-1">No Discrepancies in this Filter</h3>
-                <p className="text-xs text-[#64748B]">All audited fields satisfy compliance checks or no findings matched the filter.</p>
+                <h3 className="font-bold text-[#10243A] text-base mb-1">{d.noFindings}</h3>
+                <p className="text-xs text-[#64748B]">{d.noFindingsSub}</p>
               </div>
             ) : (
               filteredFindings.map((finding) => (

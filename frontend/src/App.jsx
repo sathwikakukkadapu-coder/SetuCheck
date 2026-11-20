@@ -9,15 +9,8 @@ import ReportPage from './pages/ReportPage';
 import AdminPage from './pages/AdminPage';
 import SetuMitraChat from './components/SetuMitraChat';
 import { fetchDemoCase, runAudit } from './api/apiClient';
-import { Sparkles, Play, CheckCircle2, AlertTriangle, AlertCircle, ArrowRight } from 'lucide-react';
-
-const DEMO_BUTTONS = [
-  { id: 'case-1-perfect-match', label: 'Case 1: 100% Match', score: '100', color: 'emerald' },
-  { id: 'case-2-name-mismatch', label: 'Case 2: Name Mismatch', score: '84', color: 'amber' },
-  { id: 'case-3-invalid-ifsc', label: 'Case 3: Invalid IFSC', score: '63', color: 'rose' },
-  { id: 'case-4-missing-passbook', label: 'Case 4: Missing Proof', score: '48', color: 'rose' },
-  { id: 'case-5-multiple-mismatches', label: 'Case 5: Multi-Error', score: '50', color: 'purple' },
-];
+import { Sparkles } from 'lucide-react';
+import { useLanguage } from './i18n/LanguageContext';
 
 export default function App() {
   const [activePage, setActivePage] = useState('landing');
@@ -25,7 +18,15 @@ export default function App() {
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeCaseId, setActiveCaseId] = useState('case-2-name-mismatch');
-  const [currentLang, setCurrentLang] = useState('en');
+  const { t } = useLanguage();
+
+  const demoButtons = [
+    { id: 'case-1-perfect-match', label: t.nav.demoCases.case1, score: '100', color: 'emerald' },
+    { id: 'case-2-name-mismatch', label: t.nav.demoCases.case2, score: '84', color: 'amber' },
+    { id: 'case-3-invalid-ifsc', label: t.nav.demoCases.case3, score: '63', color: 'rose' },
+    { id: 'case-4-missing-passbook', label: t.nav.demoCases.case4, score: '48', color: 'rose' },
+    { id: 'case-5-multiple-mismatches', label: t.nav.demoCases.case5, score: '50', color: 'purple' },
+  ];
 
   // Pre-load default audit case so all tabs are populated immediately
   useEffect(() => {
@@ -77,8 +78,6 @@ export default function App() {
         setActivePage={setActivePage} 
         auditResult={auditResult} 
         onOpenChat={() => setIsChatOpen(true)}
-        currentLang={currentLang}
-        onLanguageChange={setCurrentLang}
       />
 
       {/* 1-Click Judges Evaluation Switcher Bar */}
@@ -88,12 +87,12 @@ export default function App() {
             <div className="flex items-center gap-2 text-slate-300 font-bold">
               <Sparkles className="w-3.5 h-3.5 text-[#2DD4BF] animate-pulse" />
               <span className="text-[11px] uppercase tracking-wider text-[#2DD4BF]">
-                Judges One-Click Evaluation Suite:
+                {t.nav.judgesBar}
               </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
-              {DEMO_BUTTONS.map((btn) => (
+              {demoButtons.map((btn) => (
                 <button
                   key={btn.id}
                   onClick={() => handleDirectDemoRun(btn.id)}

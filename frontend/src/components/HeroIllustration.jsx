@@ -1,17 +1,18 @@
 import React from 'react';
 import { 
-  ShieldCheck, 
   CheckCircle2, 
   AlertTriangle, 
-  GitCompare, 
   Sparkles, 
   Building2, 
   User, 
-  CreditCard,
   Check
 } from 'lucide-react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function HeroIllustration({ onLoadDemo }) {
+  const { t } = useLanguage();
+  const p = t.hero.preview;
+
   return (
     <div className="relative w-full max-w-lg mx-auto select-none">
       {/* Background glow effects */}
@@ -30,13 +31,13 @@ export default function HeroIllustration({ onLoadDemo }) {
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
             </div>
             <span className="text-[11px] font-mono text-slate-400 font-semibold pl-2">
-              SETU-AUDIT-PREVIEW // LIVE ENGINE
+              SETU-AUDIT // {p.tag}
             </span>
           </div>
 
           <div className="inline-flex items-center space-x-1 text-[10px] bg-[#0D9488]/20 text-[#2DD4BF] border border-[#0D9488]/40 px-2 py-0.5 rounded-full font-bold">
             <Sparkles className="w-3 h-3 animate-spin" style={{ animationDuration: '6s' }} />
-            <span>Deterministic AI</span>
+            <span>{p.aiTag}</span>
           </div>
         </div>
 
@@ -62,18 +63,18 @@ export default function HeroIllustration({ onLoadDemo }) {
             </div>
             <div>
               <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                <span>Readiness Score</span>
+                <span>{p.readiness}</span>
                 <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.2 rounded font-semibold">
-                  PASSABLE
+                  {p.passable}
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400">1 Review Requirement &bull; 0 Critical Errors</p>
+              <p className="text-[10px] text-slate-400">{p.reviewRequirement}</p>
             </div>
           </div>
 
           <div className="text-right">
-            <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider block">Target Scheme</span>
-            <span className="text-xs font-extrabold text-[#2DD4BF]">NOAPS Pension</span>
+            <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider block">{p.targetScheme}</span>
+            <span className="text-xs font-extrabold text-[#2DD4BF]">{p.pensionScheme}</span>
           </div>
         </div>
 
@@ -92,7 +93,7 @@ export default function HeroIllustration({ onLoadDemo }) {
             <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2 pt-1 font-semibold">
               <span className="flex items-center gap-1 text-slate-300">
                 <User className="w-3 h-3 text-[#2DD4BF]" />
-                <span>Identity Proof (Aadhaar Format)</span>
+                <span>{p.aadhaarCard}</span>
               </span>
               <span className="text-emerald-400 flex items-center gap-0.5">
                 <CheckCircle2 className="w-3 h-3" /> OCR 98.4%
@@ -110,7 +111,7 @@ export default function HeroIllustration({ onLoadDemo }) {
               </div>
               <div className="text-right">
                 <span className="text-[9px] font-mono bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
-                  Verified Format
+                  {p.verifiedFormat}
                 </span>
               </div>
             </div>
@@ -121,7 +122,7 @@ export default function HeroIllustration({ onLoadDemo }) {
             <div className="absolute inset-x-8 h-px bg-gradient-to-r from-transparent via-[#2DD4BF]/50 to-transparent"></div>
             <div className="relative z-10 inline-flex items-center space-x-1.5 bg-slate-900 border border-amber-500/40 text-amber-300 px-3 py-1 rounded-full text-[10px] font-bold shadow-md">
               <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
-              <span>Initial Variance Detected (88% RapidFuzz Concordance)</span>
+              <span>{p.varianceDetected}</span>
             </div>
           </div>
 
@@ -130,7 +131,7 @@ export default function HeroIllustration({ onLoadDemo }) {
             <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2 font-semibold">
               <span className="flex items-center gap-1 text-slate-300">
                 <Building2 className="w-3 h-3 text-sky-400" />
-                <span>Bank Passbook (State Bank of India)</span>
+                <span>{p.passbookCard}</span>
               </span>
               <span className="text-emerald-400 flex items-center gap-0.5">
                 <CheckCircle2 className="w-3 h-3" /> OCR 96.1%
@@ -151,7 +152,7 @@ export default function HeroIllustration({ onLoadDemo }) {
               </div>
               <div className="text-right">
                 <span className="text-[9px] font-mono bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800">
-                  RBI Validated
+                  {p.rbiValidated}
                 </span>
               </div>
             </div>
@@ -162,18 +163,18 @@ export default function HeroIllustration({ onLoadDemo }) {
         <div className="pt-1 grid grid-cols-3 gap-2 text-[10px] text-slate-300">
           <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-2 text-center flex flex-col items-center">
             <Check className="w-3.5 h-3.5 text-emerald-400 mb-0.5" />
-            <span className="font-semibold text-white">IFSC Active</span>
+            <span className="font-semibold text-white">{p.ifscActive}</span>
             <span className="text-[9px] text-slate-400">NPCI Concordant</span>
           </div>
           <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-2 text-center flex flex-col items-center">
             <Check className="w-3.5 h-3.5 text-emerald-400 mb-0.5" />
-            <span className="font-semibold text-white">DOB Match</span>
-            <span className="text-[9px] text-slate-400">Age Verified (44y)</span>
+            <span className="font-semibold text-white">{p.dobMatch}</span>
+            <span className="text-[9px] text-slate-400">Age (44y)</span>
           </div>
           <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-2 text-center flex flex-col items-center">
             <Check className="w-3.5 h-3.5 text-amber-400 mb-0.5" />
-            <span className="font-semibold text-white">Name Variant</span>
-            <span className="text-[9px] text-amber-300">Affidavit Suggested</span>
+            <span className="font-semibold text-white">{p.nameVariant}</span>
+            <span className="text-[9px] text-amber-300">Affidavit</span>
           </div>
         </div>
 
